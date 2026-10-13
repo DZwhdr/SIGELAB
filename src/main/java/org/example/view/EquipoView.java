@@ -98,7 +98,9 @@ public class EquipoView extends JPanel {
 
         add(superior, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
-
+        TemaWindowsClasico.aplicar(this);
+        TemaWindowsClasico.aplicarTitulo(titulo);
+        TemaWindowsClasico.aplicarTabla(tabla);
         btnNuevo.addActionListener(evento -> limpiarFormulario());
         btnGuardar.addActionListener(evento -> guardar());
         btnActualizar.addActionListener(evento -> actualizar());

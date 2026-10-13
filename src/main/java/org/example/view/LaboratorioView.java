@@ -95,7 +95,9 @@ public class LaboratorioView extends JPanel {
 
         add(parteSuperior, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
-
+        TemaWindowsClasico.aplicar(this);
+        TemaWindowsClasico.aplicarTitulo(titulo);
+        TemaWindowsClasico.aplicarTabla(tabla);
         btnNuevo.addActionListener(evento -> {
             limpiarFormulario();
             cargarTabla();
