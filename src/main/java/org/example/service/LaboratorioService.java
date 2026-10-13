@@ -1,0 +1,122 @@
+package org.example.service;
+
+import org.example.model.Laboratorio;
+import org.example.repository.LaboratorioRepository;
+
+import java.sql.SQLException;
+import java.util.List;
+
+public class LaboratorioService {
+
+    private final LaboratorioRepository repository =
+            new LaboratorioRepository();
+
+    public void guardar(Laboratorio laboratorio) throws SQLException {
+        validar(laboratorio);
+
+        if (laboratorio.getId() != 0) {
+            throw new IllegalArgumentException(
+                    "Para guardar uno nuevo, presiona Nuevo."
+            );
+        }
+
+        comprobarCodigoDisponible(laboratorio);
+        repository.guardar(laboratorio);
+    }
+
+    public void actualizar(Laboratorio laboratorio) throws SQLException {
+        validar(laboratorio);
+
+        if (laboratorio.getId() <= 0) {
+            throw new IllegalArgumentException(
+                    "Selecciona un laboratorio para actualizar."
+            );
+        }
+
+        comprobarCodigoDisponible(laboratorio);
+
+        if (!repository.actualizar(laboratorio)) {
+            throw new IllegalArgumentException(
+                    "El laboratorio ya no existe."
+            );
+        }
+    }
+
+    public List<Laboratorio> listar() throws SQLException {
+        return repository.listar();
+    }
+
+    public Laboratorio buscarPorCodigo(String codigo) throws SQLException {
+        String codigoLimpio = validarTexto(codigo, "Código", 20);
+        return repository.buscarPorCodigo(codigoLimpio);
+    }
+
+    private void comprobarCodigoDisponible(
+            Laboratorio laboratorio
+    ) throws SQLException {
+        Laboratorio existente =
+                repository.buscarPorCodigo(laboratorio.getCodigo());
+
+        if (existente != null
+                && existente.getId() != laboratorio.getId()) {
+            throw new IllegalArgumentException(
+                    "Ya existe otro laboratorio con ese código."
+            );
+        }
+    }
+
+    private void validar(Laboratorio laboratorio) {
+        if (laboratorio == null) {
+            throw new IllegalArgumentException(
+                    "Debes proporcionar los datos del laboratorio."
+            );
+        }
+
+        laboratorio.setCodigo(
+                validarTexto(laboratorio.getCodigo(), "Código", 20)
+        );
+        laboratorio.setNombre(
+                validarTexto(laboratorio.getNombre(), "Nombre", 100)
+        );
+        laboratorio.setUbicacion(
+                validarTexto(laboratorio.getUbicacion(), "Ubicación", 150)
+        );
+
+        if (laboratorio.getCapacidad() <= 0) {
+            throw new IllegalArgumentException(
+                    "La capacidad debe ser mayor que cero."
+            );
+        }
+
+        String estado = laboratorio.getEstado();
+
+        if (!"ACTIVO".equals(estado)
+                && !"INACTIVO".equals(estado)) {
+            throw new IllegalArgumentException(
+                    "El estado debe ser ACTIVO o INACTIVO."
+            );
+        }
+    }
+
+    private String validarTexto(
+            String texto,
+            String campo,
+            int limite
+    ) {
+        if (texto == null || texto.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El campo " + campo + " es obligatorio."
+            );
+        }
+
+        String textoLimpio = texto.strip();
+
+        if (textoLimpio.length() > limite) {
+            throw new IllegalArgumentException(
+                    campo + " permite máximo " + limite + " caracteres."
+            );
+        }
+
+        return textoLimpio;
+    }
+}
