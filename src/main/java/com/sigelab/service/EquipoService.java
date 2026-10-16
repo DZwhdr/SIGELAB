@@ -1,12 +1,28 @@
-package org.example.service;
+package com.sigelab
 
-import org.example.enums.EstadoEquipo;
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
-import org.example.model.TipoEquipo;
-import org.example.repository.EquipoRepository;
-import org.example.repository.LaboratorioRepository;
-import org.example.repository.TipoEquipoRepository;
+.service;
+
+import com.sigelab
+
+.enums.EstadoEquipo;
+import com.sigelab
+
+.model.Equipo;
+import com.sigelab
+
+.model.Laboratorio;
+import com.sigelab
+
+.model.TipoEquipo;
+import com.sigelab
+
+.repository.EquipoRepository;
+import com.sigelab
+
+.repository.LaboratorioRepository;
+import com.sigelab
+
+.repository.TipoEquipoRepository;
 
 import java.sql.SQLException;
 import java.util.List;

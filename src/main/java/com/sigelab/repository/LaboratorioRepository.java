@@ -1,7 +1,13 @@
-package org.example.repository;
+package com.sigelab
 
-import org.example.config.ConexionBD;
-import org.example.model.Laboratorio;
+.repository;
+
+import com.sigelab
+
+.repository.ConexionBD;
+import com.sigelab
+
+.model.Laboratorio;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,7 +27,7 @@ public class LaboratorioRepository {
                 """;
 
         try (
-                Connection conexion = ConexionBD.conectar();
+                Connection conexion = ConexionBD.obtenerConexion();
                 PreparedStatement consulta = conexion.prepareStatement(
                         sql, Statement.RETURN_GENERATED_KEYS
                 )
@@ -50,7 +56,7 @@ public class LaboratorioRepository {
                 """;
 
         try (
-                Connection conexion = ConexionBD.conectar();
+                Connection conexion = ConexionBD.obtenerConexion();
                 PreparedStatement consulta = conexion.prepareStatement(sql);
                 ResultSet resultado = consulta.executeQuery()
         ) {
@@ -70,7 +76,7 @@ public class LaboratorioRepository {
                 """;
 
         try (
-                Connection conexion = ConexionBD.conectar();
+                Connection conexion = ConexionBD.obtenerConexion();
                 PreparedStatement consulta = conexion.prepareStatement(sql)
         ) {
             consulta.setString(1, codigo);
@@ -94,7 +100,7 @@ public class LaboratorioRepository {
                 """;
 
         try (
-                Connection conexion = ConexionBD.conectar();
+                Connection conexion = ConexionBD.obtenerConexion();
                 PreparedStatement consulta = conexion.prepareStatement(sql)
         ) {
             colocarDatos(consulta, laboratorio);

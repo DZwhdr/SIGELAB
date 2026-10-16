@@ -1,10 +1,20 @@
-package org.example.view;
+package com.sigelab.view;
 
-import org.example.controller.EquipoController;
-import org.example.enums.EstadoEquipo;
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
-import org.example.model.TipoEquipo;
+import com.sigelab
+
+.controller.EquipoController;
+import com.sigelab
+
+.enums.EstadoEquipo;
+import com.sigelab
+
+.model.Equipo;
+import com.sigelab
+
+.model.Laboratorio;
+import com.sigelab
+
+.model.TipoEquipo;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

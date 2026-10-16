@@ -1,10 +1,22 @@
-package org.example.repository;
+package com.sigelab
 
-import org.example.config.ConexionBD;
-import org.example.enums.EstadoEquipo;
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
-import org.example.model.TipoEquipo;
+.repository;
+
+import com.sigelab
+
+.repository.ConexionBD;
+import com.sigelab
+
+.enums.EstadoEquipo;
+import com.sigelab
+
+.model.Equipo;
+import com.sigelab
+
+.model.Laboratorio;
+import com.sigelab
+
+.model.TipoEquipo;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -40,7 +52,7 @@ public class EquipoRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(
                      sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -62,7 +74,7 @@ public class EquipoRepository {
         List<Equipo> equipos = new ArrayList<>();
         String sql = CONSULTA_BASE + " ORDER BY e.id";
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql);
              ResultSet resultado = sentencia.executeQuery()) {
@@ -78,7 +90,7 @@ public class EquipoRepository {
     public Equipo buscarPorCodigo(String codigo) throws SQLException {
         String sql = CONSULTA_BASE + " WHERE e.codigo_inventario = ?";
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql)) {
 
@@ -109,7 +121,7 @@ public class EquipoRepository {
                 WHERE id = ?
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql)) {
 

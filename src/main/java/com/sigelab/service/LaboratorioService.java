@@ -1,7 +1,13 @@
-package org.example.service;
+package com.sigelab
 
-import org.example.model.Laboratorio;
-import org.example.repository.LaboratorioRepository;
+.service;
+
+import com.sigelab
+
+.model.Laboratorio;
+import com.sigelab
+
+.repository.LaboratorioRepository;
 
 import java.sql.SQLException;
 import java.util.List;

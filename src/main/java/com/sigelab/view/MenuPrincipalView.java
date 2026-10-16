@@ -172,8 +172,23 @@ public class MenuPrincipalView extends JFrame {
         // Eventos temporales para los demás módulos operativos
         btnPrestamos.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Módulo de Préstamos y QR..."));
         btnDevoluciones.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Módulo de Devoluciones y Mantenimiento..."));
-        btnEquipos.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Catálogo de Equipos y Laboratorios..."));
-        btnReportes.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Reportes y Auditoría..."));
+        btnEquipos.addActionListener(e -> {
+            JFrame ventanaCatalogo = new JFrame(
+                    "SIGELAB - Equipos y Laboratorios"
+            );
+            ventanaCatalogo.setDefaultCloseOperation(
+                    JFrame.DISPOSE_ON_CLOSE
+            );
+
+            JTabbedPane pestanas = new JTabbedPane();
+            pestanas.addTab("Equipos", new EquipoView());
+            pestanas.addTab("Laboratorios", new LaboratorioView());
+
+            ventanaCatalogo.add(pestanas);
+            ventanaCatalogo.setSize(1100, 700);
+            ventanaCatalogo.setLocationRelativeTo(this);
+            ventanaCatalogo.setVisible(true);
+        });  btnReportes.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Reportes y Auditoría..."));
 
         // Evento del botón Cerrar Sesión
         btnLogout.addActionListener(e -> {

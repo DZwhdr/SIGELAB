@@ -1,9 +1,19 @@
-package org.example.controller;
+package com.sigelab
 
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
-import org.example.model.TipoEquipo;
-import org.example.service.EquipoService;
+.controller;
+
+import com.sigelab
+
+.model.Equipo;
+import com.sigelab
+
+.model.Laboratorio;
+import com.sigelab
+
+.model.TipoEquipo;
+import com.sigelab
+
+.service.EquipoService;
 
 import java.sql.SQLException;
 import java.util.List;

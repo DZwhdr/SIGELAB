@@ -1,7 +1,13 @@
-package org.example.view;
+package com.sigelab
 
-import org.example.controller.LaboratorioController;
-import org.example.model.Laboratorio;
+.view;
+
+import com.sigelab
+
+.controller.LaboratorioController;
+import com.sigelab
+
+.model.Laboratorio;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

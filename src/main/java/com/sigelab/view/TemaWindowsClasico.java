@@ -1,4 +1,6 @@
-package org.example.view;
+package com.sigelab
+
+.view;
 
 import javax.swing.*;
 import javax.swing.table.JTableHeader;

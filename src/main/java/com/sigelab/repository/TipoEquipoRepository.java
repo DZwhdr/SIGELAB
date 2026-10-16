@@ -1,7 +1,13 @@
-package org.example.repository;
+package com.sigelab
 
-import org.example.config.ConexionBD;
-import org.example.model.TipoEquipo;
+.repository;
+
+import com.sigelab
+
+.repository.ConexionBD;
+import com.sigelab
+
+.model.TipoEquipo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,7 +27,7 @@ public class TipoEquipoRepository {
                 ORDER BY nombre
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql);
              ResultSet resultado = sentencia.executeQuery()) {
 
@@ -45,7 +51,7 @@ public class TipoEquipoRepository {
                 WHERE id = ?
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
 
             sentencia.setInt(1, id);

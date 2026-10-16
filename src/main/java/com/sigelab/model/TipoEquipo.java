@@ -1,4 +1,6 @@
-package org.example.model;
+package com.sigelab
+
+.model;
 
 public class TipoEquipo {
     private int id;
