@@ -1,6 +1,7 @@
+
 package org.example.repository;
 
-import org.example.config.ConexionBD;
+import com.sigelab.repository.ConexionBD;
 import org.example.enums.EstadoEquipo;
 import org.example.model.Equipo;
 import org.example.model.Laboratorio;
@@ -40,7 +41,7 @@ public class EquipoRepository {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(
                      sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -62,7 +63,7 @@ public class EquipoRepository {
         List<Equipo> equipos = new ArrayList<>();
         String sql = CONSULTA_BASE + " ORDER BY e.id";
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql);
              ResultSet resultado = sentencia.executeQuery()) {
@@ -78,7 +79,7 @@ public class EquipoRepository {
     public Equipo buscarPorCodigo(String codigo) throws SQLException {
         String sql = CONSULTA_BASE + " WHERE e.codigo_inventario = ?";
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql)) {
 
@@ -109,7 +110,7 @@ public class EquipoRepository {
                 WHERE id = ?
                 """;
 
-        try (Connection conexion = ConexionBD.conectar();
+        try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
                      conexion.prepareStatement(sql)) {
 

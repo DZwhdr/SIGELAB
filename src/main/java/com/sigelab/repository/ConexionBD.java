@@ -10,7 +10,7 @@ public class ConexionBD {
     // Parámetros de conexión a la base de datos (puedes ajustar el nombre de tu base de datos, usuario y contraseña según tu entorno local)
     private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=SIGELAB;encrypt=true;trustServerCertificate=true;";
     private static final String USER = "sa"; // Usuario por defecto de SQL Server (cámbialo si usas otro)
-    private static final String PASSWORD = "Sigelab2026!"; // Tu contraseña de SQL Server
+    private static final String PASSWORD = "Dev2025!"; // Tu contraseña de SQL Server
 
     // Método estático para obtener una nueva conexión activa hacia la base de datos
     public static Connection obtenerConexion() {

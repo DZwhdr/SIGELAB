@@ -2,6 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.sigelab</groupId>
@@ -15,6 +16,7 @@
     </properties>
 
     <dependencies>
+
         <!-- Conector JDBC para Microsoft SQL Server -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
@@ -22,23 +24,33 @@
             <version>12.6.1.jre11</version>
         </dependency>
 
-        <!-- Librerías ZXing para Lectura y Generación de Códigos QR -->
+        <!-- ZXing: generación y lectura de códigos QR -->
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>core</artifactId>
             <version>3.5.3</version>
         </dependency>
+
         <dependency>
             <groupId>com.google.zxing</groupId>
             <artifactId>javase</artifactId>
             <version>3.5.3</version>
         </dependency>
 
-        <!-- Librería Gson para consumir la API de Python -->
+        <!-- Gson: consumo de la API de Python -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
+
+        <!-- Webcam Capture: acceso a la cámara web para escanear QR -->
+        <dependency>
+            <groupId>com.github.sarxos</groupId>
+            <artifactId>webcam-capture</artifactId>
+            <version>0.3.12</version>
+        </dependency>
+
     </dependencies>
+
 </project>
