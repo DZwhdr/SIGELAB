@@ -1,8 +1,8 @@
 
-package org.example.view;
+package com.sigelab.view;
 
-import org.example.controller.EquipoQRController;
-import org.example.repository.EquipoQRRepository.DatosEquipoQR;
+import com.sigelab.controller.EquipoQRController;
+import com.sigelab.repository.EquipoQRRepository.DatosEquipoQR;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,8 +19,10 @@ public class ConsultaEquipoQRForm extends JFrame {
     private JTextField txtEstado;
 
     private JLabel lblMensaje;
+
     private JButton btnEscanear;
     private JButton btnBuscar;
+    private JButton btnVolver;
 
     public ConsultaEquipoQRForm() {
         controller = new EquipoQRController();
@@ -31,17 +33,19 @@ public class ConsultaEquipoQRForm extends JFrame {
 
     private void configurarVentana() {
         setTitle("SIGELAB - Consulta de Equipos por QR");
-        setSize(560, 470);
+        setSize(560, 520);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(false);
     }
 
     private void crearComponentes() {
+
         JPanel principal = new JPanel(new BorderLayout(15, 15));
         principal.setBackground(new Color(245, 247, 250));
         principal.setBorder(new EmptyBorder(25, 30, 25, 30));
 
+        // Encabezado
         JLabel titulo = new JLabel("Consulta de equipos");
         titulo.setFont(new Font("SansSerif", Font.BOLD, 24));
         titulo.setForeground(new Color(35, 49, 66));
@@ -58,6 +62,7 @@ public class ConsultaEquipoQRForm extends JFrame {
 
         principal.add(encabezado, BorderLayout.NORTH);
 
+        // Formulario de consulta
         JPanel formulario = new JPanel(new GridBagLayout());
         formulario.setBackground(Color.WHITE);
         formulario.setBorder(new EmptyBorder(25, 25, 25, 25));
@@ -79,6 +84,7 @@ public class ConsultaEquipoQRForm extends JFrame {
 
         principal.add(formulario, BorderLayout.CENTER);
 
+        // Panel inferior
         JPanel inferior = new JPanel(new BorderLayout(10, 15));
         inferior.setOpaque(false);
 
@@ -88,7 +94,10 @@ public class ConsultaEquipoQRForm extends JFrame {
         );
         lblMensaje.setForeground(new Color(100, 110, 120));
 
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        // Botones Escanear y Limpiar
+        JPanel botones = new JPanel(
+                new FlowLayout(FlowLayout.CENTER, 12, 0)
+        );
         botones.setOpaque(false);
 
         btnEscanear = crearBoton(
@@ -101,24 +110,55 @@ public class ConsultaEquipoQRForm extends JFrame {
                 new Color(100, 110, 120)
         );
 
-        btnEscanear.addActionListener(e -> abrirEscaner());
-        btnBuscar.addActionListener(e -> limpiarCampos());
-
         botones.add(btnEscanear);
         botones.add(btnBuscar);
 
+        // Nuevo botón para regresar al menú principal
+        btnVolver = crearBoton(
+                "← Volver al menú principal",
+                new Color(30, 60, 114)
+        );
+
+        JPanel panelVolver = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 0, 0)
+        );
+        panelVolver.setOpaque(false);
+        panelVolver.add(btnVolver);
+
+        // Organizar los botones
+        JPanel panelAcciones = new JPanel(
+                new BorderLayout(0, 15)
+        );
+        panelAcciones.setOpaque(false);
+
+        panelAcciones.add(botones, BorderLayout.NORTH);
+        panelAcciones.add(panelVolver, BorderLayout.SOUTH);
+
         inferior.add(lblMensaje, BorderLayout.NORTH);
-        inferior.add(botones, BorderLayout.SOUTH);
+        inferior.add(panelAcciones, BorderLayout.SOUTH);
 
         principal.add(inferior, BorderLayout.SOUTH);
 
         setContentPane(principal);
+
+        // Eventos
+        btnEscanear.addActionListener(e -> abrirEscaner());
+
+        btnBuscar.addActionListener(e -> limpiarCampos());
+
+        // Cierra únicamente la ventana de Consultas
+        btnVolver.addActionListener(e -> dispose());
     }
 
     private JTextField crearCampo() {
         JTextField campo = new JTextField(22);
-        campo.setFont(new Font("SansSerif", Font.PLAIN, 14));
+
+        campo.setFont(
+                new Font("SansSerif", Font.PLAIN, 14)
+        );
+
         campo.setBackground(new Color(248, 249, 251));
+
         campo.setBorder(
                 BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(
@@ -127,18 +167,25 @@ public class ConsultaEquipoQRForm extends JFrame {
                         new EmptyBorder(8, 10, 8, 10)
                 )
         );
+
         return campo;
     }
 
     private JButton crearBoton(String texto, Color color) {
         JButton boton = new JButton(texto);
-        boton.setFont(new Font("SansSerif", Font.BOLD, 13));
+
+        boton.setFont(
+                new Font("SansSerif", Font.BOLD, 13)
+        );
+
         boton.setForeground(Color.WHITE);
         boton.setBackground(color);
         boton.setFocusPainted(false);
+
         boton.setCursor(
                 Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
         );
+
         return boton;
     }
 
@@ -149,6 +196,7 @@ public class ConsultaEquipoQRForm extends JFrame {
             int fila
     ) {
         GridBagConstraints gbc = new GridBagConstraints();
+
         gbc.insets = new Insets(8, 5, 8, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
@@ -157,7 +205,11 @@ public class ConsultaEquipoQRForm extends JFrame {
         gbc.weightx = 0;
 
         JLabel label = new JLabel(etiqueta);
-        label.setFont(new Font("SansSerif", Font.BOLD, 13));
+
+        label.setFont(
+                new Font("SansSerif", Font.BOLD, 13)
+        );
+
         panel.add(label, gbc);
 
         gbc.gridx = 1;
@@ -176,6 +228,7 @@ public class ConsultaEquipoQRForm extends JFrame {
     }
 
     private void consultarEquipo(String contenidoQR) {
+
         limpiarCampos();
 
         btnEscanear.setEnabled(false);
@@ -187,6 +240,7 @@ public class ConsultaEquipoQRForm extends JFrame {
                     @Override
                     protected DatosEquipoQR doInBackground()
                             throws SQLException {
+
                         return controller.buscarEquipoPorQR(
                                 contenidoQR
                         );
@@ -194,12 +248,14 @@ public class ConsultaEquipoQRForm extends JFrame {
 
                     @Override
                     protected void done() {
+
                         btnEscanear.setEnabled(true);
 
                         try {
                             DatosEquipoQR equipo = get();
 
                             if (equipo == null) {
+
                                 lblMensaje.setText(
                                         "Equipo no encontrado."
                                 );
@@ -211,27 +267,39 @@ public class ConsultaEquipoQRForm extends JFrame {
                                         "Equipo no encontrado",
                                         JOptionPane.WARNING_MESSAGE
                                 );
+
                                 return;
                             }
 
                             txtCodigo.setText(
                                     equipo.getCodigoInventario()
                             );
-                            txtNombre.setText(equipo.getNombre());
-                            txtTipo.setText(equipo.getTipo());
-                            txtEstado.setText(equipo.getEstado());
+
+                            txtNombre.setText(
+                                    equipo.getNombre()
+                            );
+
+                            txtTipo.setText(
+                                    equipo.getTipo()
+                            );
+
+                            txtEstado.setText(
+                                    equipo.getEstado()
+                            );
 
                             lblMensaje.setText(
                                     "Equipo encontrado correctamente."
                             );
 
                         } catch (Exception e) {
+
                             lblMensaje.setText(
                                     "No se pudo consultar el equipo."
                             );
 
                             Throwable causa = e.getCause() != null
-                                    ? e.getCause() : e;
+                                    ? e.getCause()
+                                    : e;
 
                             JOptionPane.showMessageDialog(
                                     ConsultaEquipoQRForm.this,
@@ -247,6 +315,7 @@ public class ConsultaEquipoQRForm extends JFrame {
     }
 
     private void limpiarCampos() {
+
         txtCodigo.setText("");
         txtNombre.setText("");
         txtTipo.setText("");
@@ -258,6 +327,7 @@ public class ConsultaEquipoQRForm extends JFrame {
     }
 
     public static void main(String[] args) {
+
         SwingUtilities.invokeLater(() ->
                 new ConsultaEquipoQRForm().setVisible(true)
         );

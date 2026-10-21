@@ -1,10 +1,9 @@
+package com.sigelab.view;
 
-package org.example.view;
-
-import org.example.controller.EquipoQRController;
-import org.example.repository.EquipoQRRepository;
-import org.example.repository.EquipoQRRepository.DatosEquipoQR;
-import org.example.util.QRUtils;
+import com.sigelab.controller.EquipoQRController;
+import com.sigelab.repository.EquipoQRRepository;
+import com.sigelab.repository.EquipoQRRepository.DatosEquipoQR;
+import com.sigelab.util.QRUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -29,6 +28,7 @@ public class GenerarEquipoQRForm extends JFrame {
     private JButton btnBuscar;
     private JButton btnGenerar;
     private JButton btnGuardar;
+    private JButton btnVolver;
 
     private BufferedImage imagenQR;
     private DatosEquipoQR equipoActual;
@@ -43,7 +43,7 @@ public class GenerarEquipoQRForm extends JFrame {
 
     private void configurarVentana() {
         setTitle("SIGELAB - Generador de Códigos QR");
-        setSize(650, 690);
+        setSize(650, 730);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(false);
@@ -145,6 +145,7 @@ public class GenerarEquipoQRForm extends JFrame {
 
         principal.add(contenido, BorderLayout.CENTER);
 
+        // Panel inferior
         JPanel inferior = new JPanel(new BorderLayout(10, 12));
         inferior.setOpaque(false);
 
@@ -175,16 +176,37 @@ public class GenerarEquipoQRForm extends JFrame {
         botones.add(btnGenerar);
         botones.add(btnGuardar);
 
+        // Nuevo botón para regresar al Dashboard
+        btnVolver = crearBoton(
+                "← Volver al menú principal",
+                new Color(30, 60, 114)
+        );
+
+        JPanel panelVolver = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 0, 0)
+        );
+        panelVolver.setOpaque(false);
+        panelVolver.add(btnVolver);
+
+        JPanel acciones = new JPanel(new BorderLayout(0, 12));
+        acciones.setOpaque(false);
+        acciones.add(botones, BorderLayout.NORTH);
+        acciones.add(panelVolver, BorderLayout.SOUTH);
+
         inferior.add(lblMensaje, BorderLayout.NORTH);
-        inferior.add(botones, BorderLayout.SOUTH);
+        inferior.add(acciones, BorderLayout.SOUTH);
 
         principal.add(inferior, BorderLayout.SOUTH);
 
         setContentPane(principal);
 
+        // Eventos
         btnBuscar.addActionListener(e -> buscarEquipo());
         btnGenerar.addActionListener(e -> generarQR());
         btnGuardar.addActionListener(e -> guardarQR());
+
+        // Cierra únicamente esta ventana
+        btnVolver.addActionListener(e -> dispose());
 
         txtCodigo.addActionListener(e -> buscarEquipo());
     }
@@ -360,7 +382,6 @@ public class GenerarEquipoQRForm extends JFrame {
         }
 
         JFileChooser selector = new JFileChooser();
-
         selector.setDialogTitle("Guardar código QR");
 
         selector.setSelectedFile(

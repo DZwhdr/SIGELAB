@@ -37,18 +37,25 @@
             <version>3.5.3</version>
         </dependency>
 
-        <!-- Gson: consumo de la API de Python -->
+        <!-- Gson: lectura de respuestas JSON -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
 
-        <!-- Webcam Capture: acceso a la cámara web para escanear QR -->
+        <!-- Webcam Capture: cámara web -->
         <dependency>
             <groupId>com.github.sarxos</groupId>
             <artifactId>webcam-capture</artifactId>
             <version>0.3.12</version>
+        </dependency>
+
+        <!-- Apache HttpClient 5: conexión con reconocimiento facial Python -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.3.1</version>
         </dependency>
 
     </dependencies>

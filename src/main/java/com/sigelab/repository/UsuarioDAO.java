@@ -1,3 +1,4 @@
+
 package com.sigelab.repository;
 
 import com.sigelab.model.Rol;
@@ -9,12 +10,29 @@ import java.util.List;
 
 public class UsuarioDAO {
 
-    // Método para obtener todos los usuarios de la base de datos
+    // Obtiene todos los usuarios de la base de datos
     public List<Usuario> obtenerTodos() {
         List<Usuario> lista = new ArrayList<>();
-        String sql = "SELECT u.id_usuario, u.username, u.password, u.nombre, u.apellido, u.correo, u.activo, " +
-                "r.id_rol, r.nombre_rol " +
-                "FROM usuarios u JOIN roles r ON u.id_rol = r.id_rol";
+
+        String sql = """
+                SELECT
+                    id AS id_usuario,
+                    username,
+                    password,
+                    nombre,
+                    apellido,
+                    correo,
+                    CASE
+                        WHEN estado = 'ACTIVO' THEN 1
+                        ELSE 0
+                    END AS activo,
+                    rol_id AS id_rol,
+                    CASE
+                        WHEN rol_id = 1 THEN 'Administrador'
+                        ELSE 'Operador'
+                    END AS nombre_rol
+                FROM dbo.usuario
+                """;
 
         try (Connection con = ConexionBD.obtenerConexion();
              Statement st = con.createStatement();
@@ -22,6 +40,7 @@ public class UsuarioDAO {
 
             while (rs.next()) {
                 Usuario u = new Usuario();
+
                 u.setIdUsuario(rs.getInt("id_usuario"));
                 u.setUsername(rs.getString("username"));
                 u.setPassword(rs.getString("password"));
@@ -33,17 +52,22 @@ public class UsuarioDAO {
                 Rol r = new Rol();
                 r.setId(rs.getInt("id_rol"));
                 r.setNombre(rs.getString("nombre_rol"));
-                u.setRol(r);
 
+                u.setRol(r);
                 lista.add(u);
             }
+
         } catch (SQLException e) {
+            System.err.println(
+                    "Error al obtener usuarios: " + e.getMessage()
+            );
             e.printStackTrace();
         }
+
         return lista;
     }
 
-    // Método para insertar un nuevo usuario
+    // Inserta un nuevo usuario
     public boolean insertar(Usuario u) {
         String sql = "INSERT INTO usuarios (username, password, nombre, apellido, correo, activo, id_rol) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
@@ -56,17 +80,18 @@ public class UsuarioDAO {
             ps.setString(4, u.getApellido());
             ps.setString(5, u.getCorreo());
             ps.setBoolean(6, u.isActivo());
-            ps.setInt(7, u.getRol() != null ? u.getRol().getId() : 3); // Por defecto rol 3 (Operador)
+            ps.setInt(7, u.getRol() != null ? u.getRol().getId() : 3);
 
             int filas = ps.executeUpdate();
             return filas > 0;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    // Método para actualizar los datos de un usuario
+    // Actualiza los datos de un usuario
     public boolean actualizar(Usuario u) {
         String sql = "UPDATE usuarios SET username = ?, nombre = ?, apellido = ?, correo = ?, id_rol = ? WHERE id_usuario = ?";
 
@@ -82,13 +107,14 @@ public class UsuarioDAO {
 
             int filas = ps.executeUpdate();
             return filas > 0;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    // Método para cambiar el estado (Activo / Inactivo) de un usuario
+    // Cambia el estado de un usuario
     public boolean cambiarEstado(int idUsuario, boolean activo) {
         String sql = "UPDATE usuarios SET activo = ? WHERE id_usuario = ?";
 
@@ -100,6 +126,7 @@ public class UsuarioDAO {
 
             int filas = ps.executeUpdate();
             return filas > 0;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

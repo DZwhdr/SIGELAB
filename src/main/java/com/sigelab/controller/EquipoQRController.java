@@ -1,8 +1,7 @@
+package com.sigelab.controller;
 
-package org.example.controller;
-
-import org.example.repository.EquipoQRRepository;
-import org.example.repository.EquipoQRRepository.DatosEquipoQR;
+import com.sigelab.repository.EquipoQRRepository;
+import com.sigelab.repository.EquipoQRRepository.DatosEquipoQR;
 
 import java.sql.SQLException;
 
@@ -16,8 +15,9 @@ public class EquipoQRController {
         this.repository = new EquipoQRRepository();
     }
 
-    // Extrae el código de inventario del contenido del QR.
-    public String obtenerCodigoInventario(String contenidoQR) {
+    public String obtenerCodigoInventario(
+            String contenidoQR
+    ) {
 
         if (contenidoQR == null || contenidoQR.isBlank()) {
             throw new IllegalArgumentException(
@@ -33,8 +33,9 @@ public class EquipoQRController {
             );
         }
 
-        String codigoInventario =
-                contenido.substring(PREFIJO_QR.length()).trim();
+        String codigoInventario = contenido
+                .substring(PREFIJO_QR.length())
+                .trim();
 
         if (codigoInventario.isEmpty()) {
             throw new IllegalArgumentException(
@@ -45,21 +46,24 @@ public class EquipoQRController {
         return codigoInventario;
     }
 
-    // Busca en SQL Server el equipo identificado por el QR.
-    public DatosEquipoQR buscarEquipoPorQR(String contenidoQR)
-            throws SQLException {
+    public DatosEquipoQR buscarEquipoPorQR(
+            String contenidoQR
+    ) throws SQLException {
 
         String codigoInventario =
                 obtenerCodigoInventario(contenidoQR);
 
-        return repository.buscarPorCodigo(codigoInventario);
+        return repository.buscarPorCodigo(
+                codigoInventario
+        );
     }
 
-    // Prepara el contenido que debe guardarse dentro de un QR.
-    public String generarContenidoQR(String codigoInventario) {
+    public String generarContenidoQR(
+            String codigoInventario
+    ) {
 
-        if (codigoInventario == null ||
-                codigoInventario.isBlank()) {
+        if (codigoInventario == null
+                || codigoInventario.isBlank()) {
 
             throw new IllegalArgumentException(
                     "El código de inventario no puede estar vacío."

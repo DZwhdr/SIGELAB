@@ -1,7 +1,6 @@
-
 package org.example.util;
 
-import org.example.view.ScannerQRDialog;
+import com.sigelab.view.ScannerQRDialog;
 
 import javax.swing.*;
 

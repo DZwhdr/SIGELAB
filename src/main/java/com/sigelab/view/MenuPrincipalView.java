@@ -1,10 +1,9 @@
-
 package com.sigelab.view;
 
 import com.sigelab.model.Usuario;
 import org.example.view.TipoEquipoForm;
-import org.example.view.GenerarEquipoQRForm;
-import org.example.view.ConsultaEquipoQRForm;
+import com.sigelab.view.GenerarEquipoQRForm;
+import com.sigelab.view.ConsultaEquipoQRForm;
 
 import javax.swing.*;
 import java.awt.*;

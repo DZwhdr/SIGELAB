@@ -1,8 +1,6 @@
+package com.sigelab.repository;
 
-package org.example.repository;
-
-import com.sigelab.repository.ConexionBD;
-import org.example.model.TipoEquipo;
+import com.sigelab.model.TipoEquipo;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,128 +8,262 @@ import java.util.List;
 
 public class TipoEquipoRepository {
 
-    public boolean guardar(TipoEquipo tipo) throws SQLException {
-        String sql = """
-                INSERT INTO dbo.TipoEquipo (nombre, descripcion, activo)
-                VALUES (?, ?, ?)
-                """;
+    // Detecta el nombre de la columna ID.
+    private String obtenerColumnaId(Connection con)
+            throws SQLException {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+        DatabaseMetaData meta = con.getMetaData();
 
-            ps.setString(1, tipo.getNombre());
-            ps.setString(2, tipo.getDescripcion());
-            ps.setBoolean(3, tipo.isActivo());
+        try (ResultSet rs = meta.getColumns(
+                con.getCatalog(),
+                "dbo",
+                "TipoEquipo",
+                null
+        )) {
 
-            if (ps.executeUpdate() > 0) {
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        tipo.setId(rs.getInt(1));
-                    }
+            while (rs.next()) {
+                String columna = rs.getString("COLUMN_NAME");
+
+                if ("id_tipo".equalsIgnoreCase(columna)) {
+                    return "id_tipo";
                 }
-                return true;
+
+                if ("id".equalsIgnoreCase(columna)) {
+                    return "id";
+                }
+            }
+        }
+
+        throw new SQLException(
+                "No se encontró la columna ID en dbo.TipoEquipo."
+        );
+    }
+
+    // Comprueba que las columnas necesarias existan.
+    private void verificarColumnas(Connection con)
+            throws SQLException {
+
+        boolean descripcion = false;
+        boolean activo = false;
+
+        DatabaseMetaData meta = con.getMetaData();
+
+        try (ResultSet rs = meta.getColumns(
+                con.getCatalog(),
+                "dbo",
+                "TipoEquipo",
+                null
+        )) {
+
+            while (rs.next()) {
+
+                String columna = rs.getString("COLUMN_NAME");
+
+                if ("descripcion".equalsIgnoreCase(columna)) {
+                    descripcion = true;
+                }
+
+                if ("activo".equalsIgnoreCase(columna)) {
+                    activo = true;
+                }
+            }
+        }
+
+        if (!descripcion || !activo) {
+            throw new SQLException(
+                    "La tabla TipoEquipo necesita las columnas "
+                            + "'descripcion' y 'activo' para conservar "
+                            + "todas las funciones del módulo."
+            );
+        }
+    }
+
+    // Registrar un tipo de equipo.
+    public boolean guardar(TipoEquipo tipo)
+            throws SQLException {
+
+        try (Connection con = conectar()) {
+
+            verificarColumnas(con);
+
+            String sql = """
+                    INSERT INTO dbo.TipoEquipo
+                        (nombre, descripcion, activo)
+                    VALUES (?, ?, ?)
+                    """;
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(
+                                 sql,
+                                 Statement.RETURN_GENERATED_KEYS
+                         )) {
+
+                ps.setString(1, tipo.getNombre());
+                ps.setString(2, tipo.getDescripcion());
+                ps.setBoolean(3, tipo.isActivo());
+
+                if (ps.executeUpdate() > 0) {
+
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            tipo.setId(rs.getInt(1));
+                        }
+                    }
+
+                    return true;
+                }
             }
         }
 
         return false;
     }
 
-    public boolean actualizar(TipoEquipo tipo) throws SQLException {
-        String sql = """
-                UPDATE dbo.TipoEquipo
-                SET nombre = ?, descripcion = ?, activo = ?
-                WHERE id_tipo = ?
-                """;
+    // Actualizar nombre, descripción y estado.
+    public boolean actualizar(TipoEquipo tipo)
+            throws SQLException {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = conectar()) {
 
-            ps.setString(1, tipo.getNombre());
-            ps.setString(2, tipo.getDescripcion());
-            ps.setBoolean(3, tipo.isActivo());
-            ps.setInt(4, tipo.getId());
+            verificarColumnas(con);
 
-            return ps.executeUpdate() > 0;
+            String columnaId = obtenerColumnaId(con);
+
+            String sql = """
+                    UPDATE dbo.TipoEquipo
+                    SET nombre = ?,
+                        descripcion = ?,
+                        activo = ?
+                    WHERE
+                    """ + columnaId + " = ?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql)) {
+
+                ps.setString(1, tipo.getNombre());
+                ps.setString(2, tipo.getDescripcion());
+                ps.setBoolean(3, tipo.isActivo());
+                ps.setInt(4, tipo.getId());
+
+                return ps.executeUpdate() > 0;
+            }
         }
     }
 
-    public boolean eliminarLogico(int idTipo) throws SQLException {
-        String sql = """
-                UPDATE dbo.TipoEquipo
-                SET activo = 0
-                WHERE id_tipo = ?
-                """;
+    // Dar de baja sin borrar el registro.
+    public boolean eliminarLogico(int idTipo)
+            throws SQLException {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = conectar()) {
 
-            ps.setInt(1, idTipo);
-            return ps.executeUpdate() > 0;
+            verificarColumnas(con);
+
+            String columnaId = obtenerColumnaId(con);
+
+            String sql = """
+                    UPDATE dbo.TipoEquipo
+                    SET activo = 0
+                    WHERE
+                    """ + columnaId + " = ? AND activo = 1";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql)) {
+
+                ps.setInt(1, idTipo);
+
+                return ps.executeUpdate() > 0;
+            }
         }
     }
 
-    // Método original del proyecto compartido
-    public List<TipoEquipo> listar() throws SQLException {
+    // Listar todos los tipos, activos e inactivos.
+    public List<TipoEquipo> listar()
+            throws SQLException {
+
         List<TipoEquipo> lista = new ArrayList<>();
 
-        String sql = """
-                SELECT id_tipo, nombre, descripcion, activo
-                FROM dbo.TipoEquipo
-                ORDER BY nombre
-                """;
+        try (Connection con = conectar()) {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            verificarColumnas(con);
 
-            while (rs.next()) {
-                lista.add(convertirTipo(rs));
+            String columnaId = obtenerColumnaId(con);
+
+            String sql = "SELECT "
+                    + columnaId
+                    + " AS id_tipo, nombre, descripcion, activo "
+                    + "FROM dbo.TipoEquipo "
+                    + "ORDER BY nombre";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    lista.add(convertirTipo(rs));
+                }
             }
         }
 
         return lista;
     }
 
-    // Lista únicamente los tipos activos
-    public List<TipoEquipo> listarTodos() throws SQLException {
+    // Listar únicamente los tipos activos.
+    public List<TipoEquipo> listarTodos()
+            throws SQLException {
+
         List<TipoEquipo> lista = new ArrayList<>();
 
-        String sql = """
-                SELECT id_tipo, nombre, descripcion, activo
-                FROM dbo.TipoEquipo
-                WHERE activo = 1
-                ORDER BY nombre
-                """;
+        try (Connection con = conectar()) {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+            verificarColumnas(con);
 
-            while (rs.next()) {
-                lista.add(convertirTipo(rs));
+            String columnaId = obtenerColumnaId(con);
+
+            String sql = "SELECT "
+                    + columnaId
+                    + " AS id_tipo, nombre, descripcion, activo "
+                    + "FROM dbo.TipoEquipo "
+                    + "WHERE activo = 1 "
+                    + "ORDER BY nombre";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+
+                while (rs.next()) {
+                    lista.add(convertirTipo(rs));
+                }
             }
         }
 
         return lista;
     }
 
-    // Método original del proyecto compartido
-    public TipoEquipo buscarPorId(int id) throws SQLException {
-        String sql = """
-                SELECT id_tipo, nombre, descripcion, activo
-                FROM dbo.TipoEquipo
-                WHERE id_tipo = ?
-                """;
+    // Buscar un tipo por su identificador.
+    public TipoEquipo buscarPorId(int id)
+            throws SQLException {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        try (Connection con = conectar()) {
 
-            ps.setInt(1, id);
+            verificarColumnas(con);
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return convertirTipo(rs);
+            String columnaId = obtenerColumnaId(con);
+
+            String sql = "SELECT "
+                    + columnaId
+                    + " AS id_tipo, nombre, descripcion, activo "
+                    + "FROM dbo.TipoEquipo "
+                    + "WHERE " + columnaId + " = ?";
+
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql)) {
+
+                ps.setInt(1, id);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (rs.next()) {
+                        return convertirTipo(rs);
+                    }
                 }
             }
         }
@@ -139,30 +271,43 @@ public class TipoEquipoRepository {
         return null;
     }
 
-    public boolean existeNombre(String nombre, Integer idExcluir)
-            throws SQLException {
+    // Comprobar si ya existe un nombre.
+    public boolean existeNombre(
+            String nombre,
+            Integer idExcluir
+    ) throws SQLException {
 
-        String sql = """
-                SELECT COUNT(*)
-                FROM dbo.TipoEquipo
-                WHERE nombre = ?
-                """ + (idExcluir != null ? " AND id_tipo <> ?" : "");
+        try (Connection con = conectar()) {
 
-        try (Connection con = conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            String columnaId = obtenerColumnaId(con);
 
-            ps.setString(1, nombre);
+            String sql = """
+                    SELECT COUNT(*)
+                    FROM dbo.TipoEquipo
+                    WHERE nombre = ?
+                    """;
 
             if (idExcluir != null) {
-                ps.setInt(2, idExcluir);
+                sql += " AND " + columnaId + " <> ?";
             }
 
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && rs.getInt(1) > 0;
+            try (PreparedStatement ps =
+                         con.prepareStatement(sql)) {
+
+                ps.setString(1, nombre);
+
+                if (idExcluir != null) {
+                    ps.setInt(2, idExcluir);
+                }
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next() && rs.getInt(1) > 0;
+                }
             }
         }
     }
 
+    // Convertir los resultados SQL a TipoEquipo.
     private TipoEquipo convertirTipo(ResultSet rs)
             throws SQLException {
 
@@ -174,8 +319,12 @@ public class TipoEquipoRepository {
         );
     }
 
-    private Connection conectar() throws SQLException {
-        Connection conexion = ConexionBD.obtenerConexion();
+    // Obtener conexión a SQL Server.
+    private Connection conectar()
+            throws SQLException {
+
+        Connection conexion =
+                ConexionBD.obtenerConexion();
 
         if (conexion == null) {
             throw new SQLException(

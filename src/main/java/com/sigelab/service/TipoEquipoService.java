@@ -1,8 +1,7 @@
+package com.sigelab.service;
 
-package org.example.service;
-
-import org.example.model.TipoEquipo;
-import org.example.repository.TipoEquipoRepository;
+import com.sigelab.model.TipoEquipo;
+import com.sigelab.repository.TipoEquipoRepository;
 
 import java.sql.SQLException;
 import java.util.List;

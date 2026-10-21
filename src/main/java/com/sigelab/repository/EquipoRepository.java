@@ -1,11 +1,10 @@
-
-package org.example.repository;
+package com.sigelab.repository;
 
 import com.sigelab.repository.ConexionBD;
 import org.example.enums.EstadoEquipo;
 import org.example.model.Equipo;
 import org.example.model.Laboratorio;
-import org.example.model.TipoEquipo;
+import com.sigelab.model.TipoEquipo;
 
 import java.sql.*;
 import java.util.ArrayList;

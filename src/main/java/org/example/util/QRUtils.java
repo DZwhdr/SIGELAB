@@ -1,5 +1,5 @@
 
-package org.example.util;
+package com.sigelab.util;
 
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
@@ -13,10 +13,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 public class QRUtils {
 
-    // Genera un código QR y lo guarda como archivo PNG.
     public static void generarQR(
             String contenido,
             String rutaArchivo,
@@ -47,7 +48,6 @@ public class QRUtils {
         );
     }
 
-    // Genera un código QR como imagen en memoria.
     public static BufferedImage generarQR(
             String contenido,
             int ancho,
@@ -66,8 +66,6 @@ public class QRUtils {
         return MatrixToImageWriter.toBufferedImage(matriz);
     }
 
-    // Lee un QR desde una imagen, por ejemplo de la cámara.
-    // Devuelve null cuando no encuentra un código legible.
     public static String leerQRDesdeImagen(
             BufferedImage imagen
     ) throws Exception {
@@ -86,11 +84,12 @@ public class QRUtils {
         );
 
         try {
+
             Result resultado = new MultiFormatReader().decode(
                     bitmap,
-                    java.util.Map.of(
+                    Map.of(
                             DecodeHintType.POSSIBLE_FORMATS,
-                            java.util.List.of(BarcodeFormat.QR_CODE)
+                            List.of(BarcodeFormat.QR_CODE)
                     )
             );
 
@@ -101,7 +100,6 @@ public class QRUtils {
         }
     }
 
-    // Lee un QR desde un archivo de imagen.
     public static String leerQRDesdeArchivo(
             File archivo
     ) throws Exception {
@@ -123,7 +121,6 @@ public class QRUtils {
         return leerQRDesdeImagen(imagen);
     }
 
-    // Permite leer un QR indicando su ruta.
     public static String leerQRDesdeArchivo(
             String rutaArchivo
     ) throws Exception {

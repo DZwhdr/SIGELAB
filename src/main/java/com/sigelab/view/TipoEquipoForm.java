@@ -1,8 +1,8 @@
 
 package org.example.view;
 
-import org.example.controller.TipoEquipoController;
-import org.example.model.TipoEquipo;
+import com.sigelab.controller.TipoEquipoController;
+import com.sigelab.model.TipoEquipo;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -22,6 +22,7 @@ public class TipoEquipoForm extends JFrame {
     private JButton btnGuardar;
     private JButton btnLimpiar;
     private JButton btnDarDeBaja;
+    private JButton btnVolver;
 
     public TipoEquipoForm() {
         this.controller = new TipoEquipoController();
@@ -31,12 +32,13 @@ public class TipoEquipoForm extends JFrame {
 
     private void initComponents() {
         setTitle("SIGELAB - Gestión de Tipos de Equipo");
-        setSize(700, 450);
-        setMinimumSize(new Dimension(650, 400));
+        setSize(700, 480);
+        setMinimumSize(new Dimension(650, 430));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
+        // Formulario de datos
         JPanel panelForm = new JPanel(new GridLayout(2, 2, 10, 10));
         panelForm.setBorder(BorderFactory.createTitledBorder(
                 "Datos del Tipo de Equipo"
@@ -53,6 +55,7 @@ public class TipoEquipoForm extends JFrame {
         panelForm.add(new JLabel("Descripción:"));
         panelForm.add(txtDescripcion);
 
+        // Botones principales
         JPanel panelBotones = new JPanel(
                 new FlowLayout(FlowLayout.RIGHT)
         );
@@ -71,6 +74,7 @@ public class TipoEquipoForm extends JFrame {
 
         add(panelSuperior, BorderLayout.NORTH);
 
+        // Tabla de tipos de equipo
         tableModel = new DefaultTableModel(
                 new String[]{"ID", "Nombre", "Descripción"}, 0
         ) {
@@ -92,10 +96,29 @@ public class TipoEquipoForm extends JFrame {
 
         add(scrollPane, BorderLayout.CENTER);
 
+        // Botón para regresar al menú principal
+        JPanel panelInferior = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 15, 10)
+        );
+
+        btnVolver = new JButton("← Volver al menú principal");
+        btnVolver.setFont(new Font("Arial", Font.BOLD, 12));
+        btnVolver.setBackground(new Color(30, 60, 114));
+        btnVolver.setForeground(Color.WHITE);
+        btnVolver.setFocusPainted(false);
+
+        panelInferior.add(btnVolver);
+        add(panelInferior, BorderLayout.SOUTH);
+
+        // Eventos de botones
         btnGuardar.addActionListener(e -> guardar());
         btnLimpiar.addActionListener(e -> limpiarFormulario());
         btnDarDeBaja.addActionListener(e -> darDeBaja());
 
+        // Cierra únicamente esta ventana
+        btnVolver.addActionListener(e -> dispose());
+
+        // Seleccionar un registro de la tabla
         tablaTipos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()
                     && tablaTipos.getSelectedRow() != -1) {
@@ -107,6 +130,7 @@ public class TipoEquipoForm extends JFrame {
                 txtId.setText(
                         tableModel.getValueAt(fila, 0).toString()
                 );
+
                 txtNombre.setText(
                         tableModel.getValueAt(fila, 1).toString()
                 );

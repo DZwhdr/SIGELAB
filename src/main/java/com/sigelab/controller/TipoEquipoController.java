@@ -1,8 +1,7 @@
+package com.sigelab.controller;
 
-package org.example.controller;
-
-import org.example.model.TipoEquipo;
-import org.example.service.TipoEquipoService;
+import com.sigelab.model.TipoEquipo;
+import com.sigelab.service.TipoEquipoService;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -15,15 +14,24 @@ public class TipoEquipoController {
         this.service = new TipoEquipoService();
     }
 
-    public void registrar(String nombre, String descripcion)
-            throws SQLException {
+    public void registrar(
+            String nombre,
+            String descripcion
+    ) throws SQLException {
 
-        TipoEquipo tipo = new TipoEquipo(nombre, descripcion);
+        TipoEquipo tipo = new TipoEquipo(
+                nombre,
+                descripcion
+        );
+
         service.registrar(tipo);
     }
 
-    public void actualizar(int id, String nombre, String descripcion)
-            throws SQLException {
+    public void actualizar(
+            int id,
+            String nombre,
+            String descripcion
+    ) throws SQLException {
 
         TipoEquipo existente = service.buscarPorId(id);
 
@@ -43,15 +51,21 @@ public class TipoEquipoController {
         service.darDeBaja(id);
     }
 
-    public List<TipoEquipo> listarActivos() throws SQLException {
+    public List<TipoEquipo> listarActivos()
+            throws SQLException {
+
         return service.obtenerActivos();
     }
 
-    public List<TipoEquipo> listarTodos() throws SQLException {
+    public List<TipoEquipo> listarTodos()
+            throws SQLException {
+
         return service.obtenerTodos();
     }
 
-    public TipoEquipo buscarPorId(int id) throws SQLException {
+    public TipoEquipo buscarPorId(int id)
+            throws SQLException {
+
         return service.buscarPorId(id);
     }
 }

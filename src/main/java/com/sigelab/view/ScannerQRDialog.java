@@ -1,9 +1,9 @@
 
-package org.example.view;
+package com.sigelab.view;
 
 import com.github.sarxos.webcam.Webcam;
 import com.github.sarxos.webcam.WebcamPanel;
-import org.example.util.QRUtils;
+import com.sigelab.util.QRUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,6 +23,9 @@ public class ScannerQRDialog extends JDialog {
 
     private ExecutorService executor;
     private volatile boolean escaneando = false;
+    private volatile boolean cerrando = false;
+
+    private JButton btnVolver;
 
     public ScannerQRDialog(
             Window parent,
@@ -42,34 +45,80 @@ public class ScannerQRDialog extends JDialog {
 
     private void configurarVentana() {
         setLayout(new BorderLayout(10, 10));
-        setSize(550, 450);
+        setSize(550, 490);
         setLocationRelativeTo(getOwner());
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
+        // Título
         JLabel titulo = new JLabel(
                 "Escanear código QR del equipo",
                 SwingConstants.CENTER
         );
 
-        titulo.setFont(new Font("SansSerif", Font.BOLD, 18));
+        titulo.setFont(
+                new Font("SansSerif", Font.BOLD, 18)
+        );
+
         titulo.setBorder(
                 BorderFactory.createEmptyBorder(15, 10, 5, 10)
         );
 
         add(titulo, BorderLayout.NORTH);
 
+        // Panel inferior
+        JPanel panelInferior = new JPanel(new BorderLayout(0, 12));
+
+        panelInferior.setBorder(
+                BorderFactory.createEmptyBorder(10, 15, 15, 15)
+        );
+
         JLabel instrucciones = new JLabel(
                 "Coloque el código QR frente a la cámara",
                 SwingConstants.CENTER
         );
 
-        instrucciones.setBorder(
-                BorderFactory.createEmptyBorder(10, 10, 15, 10)
+        panelInferior.add(
+                instrucciones,
+                BorderLayout.NORTH
         );
 
-        add(instrucciones, BorderLayout.SOUTH);
+        // Botón para regresar
+        btnVolver = new JButton("← Volver al menú principal");
 
+        btnVolver.setFont(
+                new Font("SansSerif", Font.BOLD, 13)
+        );
+
+        btnVolver.setBackground(
+                new Color(30, 60, 114)
+        );
+
+        btnVolver.setForeground(Color.WHITE);
+        btnVolver.setFocusPainted(false);
+
+        btnVolver.setCursor(
+                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        );
+
+        JPanel panelBoton = new JPanel(
+                new FlowLayout(FlowLayout.LEFT, 0, 0)
+        );
+
+        panelBoton.add(btnVolver);
+
+        panelInferior.add(
+                panelBoton,
+                BorderLayout.SOUTH
+        );
+
+        add(panelInferior, BorderLayout.SOUTH);
+
+        // Regresar y cerrar cámara
+        btnVolver.addActionListener(e -> cerrarEscaner());
+
+        // Liberar cámara al cerrar la ventana
         addWindowListener(new WindowAdapter() {
+
             @Override
             public void windowClosing(WindowEvent e) {
                 detenerEscaneo();
@@ -94,6 +143,7 @@ public class ScannerQRDialog extends JDialog {
             }
 
             panel = new WebcamPanel(webcam);
+
             panel.setFPSDisplayed(false);
             panel.setDisplayDebugInfo(false);
             panel.setImageSizeDisplayed(false);
@@ -116,14 +166,20 @@ public class ScannerQRDialog extends JDialog {
 
     private void leerCodigosQR() {
         try {
-            // Esperar a que el panel abra la cámara.
+
+            // Esperar a que la cámara se abra
             while (escaneando && !webcam.isOpen()) {
                 Thread.sleep(100);
             }
 
+            // Leer códigos QR
             while (escaneando && webcam.isOpen()) {
 
                 Thread.sleep(150);
+
+                if (!escaneando) {
+                    break;
+                }
 
                 BufferedImage imagen = webcam.getImage();
 
@@ -146,7 +202,13 @@ public class ScannerQRDialog extends JDialog {
                     String codigoDetectado = codigo.trim();
 
                     SwingUtilities.invokeLater(() -> {
-                        dispose();
+
+                        // Evitar procesar códigos al cerrar
+                        if (cerrando) {
+                            return;
+                        }
+
+                        cerrarEscaner();
 
                         if (alDetectarQR != null) {
                             alDetectarQR.accept(codigoDetectado);
@@ -159,8 +221,11 @@ public class ScannerQRDialog extends JDialog {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+
         } catch (Exception e) {
-            if (escaneando) {
+
+            if (escaneando && !cerrando) {
+
                 SwingUtilities.invokeLater(() ->
                         mostrarError(
                                 "Error al escanear: " + e.getMessage()
@@ -170,6 +235,18 @@ public class ScannerQRDialog extends JDialog {
         }
     }
 
+    // Cerrar escáner y regresar a la ventana anterior
+    private void cerrarEscaner() {
+        if (cerrando) {
+            return;
+        }
+
+        cerrando = true;
+        detenerEscaneo();
+        dispose();
+    }
+
+    // Detener lectura y liberar cámara
     private void detenerEscaneo() {
         escaneando = false;
 
@@ -177,18 +254,19 @@ public class ScannerQRDialog extends JDialog {
             executor.shutdownNow();
         }
 
-        // WebcamPanel administra la apertura de la cámara.
-        // El cierre se realiza en otro hilo para no bloquear Swing.
         Webcam camaraActual = webcam;
 
         if (camaraActual != null) {
+
             Thread hiloCierre = new Thread(() -> {
+
                 try {
                     if (camaraActual.isOpen()) {
                         camaraActual.close();
                     }
                 } catch (Exception ignored) {
                 }
+
             }, "SIGELAB-CierreCamara");
 
             hiloCierre.setDaemon(true);
@@ -197,14 +275,21 @@ public class ScannerQRDialog extends JDialog {
     }
 
     private void mostrarError(String mensaje) {
+
         SwingUtilities.invokeLater(() -> {
+
+            if (cerrando) {
+                return;
+            }
+
             JOptionPane.showMessageDialog(
                     this,
                     mensaje,
                     "Escáner QR",
                     JOptionPane.ERROR_MESSAGE
             );
-            dispose();
+
+            cerrarEscaner();
         });
     }
 }

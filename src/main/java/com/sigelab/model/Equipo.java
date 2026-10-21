@@ -1,6 +1,7 @@
 package org.example.model;
 
 import org.example.enums.EstadoEquipo;
+import com.sigelab.model.TipoEquipo;
 
 public class Equipo {
     private int id;

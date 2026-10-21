@@ -1,5 +1,4 @@
-
-package org.example.model;
+package com.sigelab.model;
 
 public class TipoEquipo {
 
@@ -10,26 +9,32 @@ public class TipoEquipo {
 
     public TipoEquipo() {
         this.activo = true;
+        this.descripcion = "";
     }
 
-    // Constructor utilizado por el proyecto existente
     public TipoEquipo(int id, String nombre) {
         this.id = id;
         this.nombre = nombre;
+        this.descripcion = "";
         this.activo = true;
     }
 
-    // Constructor completo
-    public TipoEquipo(int id, String nombre,
-                      String descripcion, boolean activo) {
+    public TipoEquipo(
+            int id,
+            String nombre,
+            String descripcion,
+            boolean activo
+    ) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.activo = activo;
     }
 
-    // Constructor para registrar nuevos tipos
-    public TipoEquipo(String nombre, String descripcion) {
+    public TipoEquipo(
+            String nombre,
+            String descripcion
+    ) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.activo = true;
@@ -43,13 +48,14 @@ public class TipoEquipo {
         this.id = id;
     }
 
-    // Compatibilidad con tu proyecto original
     public Integer getIdTipoEquipo() {
         return id;
     }
 
     public void setIdTipoEquipo(Integer idTipoEquipo) {
-        this.id = idTipoEquipo == null ? 0 : idTipoEquipo;
+        this.id = idTipoEquipo == null
+                ? 0
+                : idTipoEquipo;
     }
 
     public String getNombre() {
