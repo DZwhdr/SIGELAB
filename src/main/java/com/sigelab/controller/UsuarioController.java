@@ -33,4 +33,3 @@ public class UsuarioController {
     public boolean cambiarEstadoUsuario(int idUsuario, boolean activo) {
         return usuarioService.cambiarEstadoUsuario(idUsuario, activo);
     }
-}
