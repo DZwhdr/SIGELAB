@@ -274,30 +274,76 @@ public class MenuPrincipalView extends JFrame {
 
         } else if (texto.equals("Equipos y Laboratorios")) {
             boton.addActionListener(e -> {
-                String[] opciones = {"Equipos", "Laboratorios", "Cancelar"};
-
-                int seleccion = JOptionPane.showOptionDialog(
+                JDialog ventana = new JDialog(
                         this,
-                        "Selecciona el módulo que deseas abrir:",
-                        "Equipos y Laboratorios",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.PLAIN_MESSAGE,
-                        null,
-                        opciones,
-                        opciones[0]
+                        "SIGELAB - Equipos y Laboratorios",
+                        true
                 );
 
-                if (seleccion == 0) {
+                ventana.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+                ventana.setSize(430, 300);
+                ventana.setLocationRelativeTo(this);
+
+                JPanel panel = new JPanel();
+                panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+                panel.setBorder(
+                        BorderFactory.createEmptyBorder(25, 30, 25, 30)
+                );
+
+                JLabel titulo = new JLabel(
+                        "EQUIPOS Y LABORATORIOS",
+                        SwingConstants.CENTER
+                );
+                titulo.setFont(new Font("Arial", Font.BOLD, 20));
+                titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                JButton btnEquipos = crearBoton(
+                        "Gestión de Equipos",
+                        new Color(41, 128, 185)
+                );
+
+                JButton btnLaboratorios = crearBoton(
+                        "Gestión de Laboratorios",
+                        new Color(142, 68, 173)
+                );
+
+                btnEquipos.setMaximumSize(
+                        new Dimension(Integer.MAX_VALUE, 60)
+                );
+                btnLaboratorios.setMaximumSize(
+                        new Dimension(Integer.MAX_VALUE, 60)
+                );
+                btnEquipos.setAlignmentX(Component.CENTER_ALIGNMENT);
+                btnLaboratorios.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                btnEquipos.addActionListener(evento -> {
+                    ventana.dispose();
                     new EquipoView(esAdmin).setVisible(true);
-                } else if (seleccion == 1) {
-                    JFrame ventanaLab =
-                            new JFrame("SIGELAB - Gestión de Laboratorios");
-                    ventanaLab.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                });
+
+                btnLaboratorios.addActionListener(evento -> {
+                    ventana.dispose();
+
+                    JFrame ventanaLab = new JFrame(
+                            "SIGELAB - Gestión de Laboratorios"
+                    );
+                    ventanaLab.setDefaultCloseOperation(
+                            JFrame.DISPOSE_ON_CLOSE
+                    );
                     ventanaLab.setSize(1000, 650);
                     ventanaLab.setLocationRelativeTo(this);
                     ventanaLab.add(new LaboratorioView(esAdmin));
                     ventanaLab.setVisible(true);
-                }
+                });
+
+                panel.add(titulo);
+                panel.add(Box.createRigidArea(new Dimension(0, 25)));
+                panel.add(btnEquipos);
+                panel.add(Box.createRigidArea(new Dimension(0, 12)));
+                panel.add(btnLaboratorios);
+
+                ventana.add(panel);
+                ventana.setVisible(true);
             });
         } else if (texto.equals("Reportes y Auditoría")) {
             boton.addActionListener(e -> {
