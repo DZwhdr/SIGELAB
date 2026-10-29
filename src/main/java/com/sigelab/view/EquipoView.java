@@ -1,10 +1,11 @@
-package org.example.view;
 
-import org.example.controller.EquipoController;
-import org.example.enums.EstadoEquipo;
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
+package com.sigelab.view;
+
+import com.sigelab.model.Equipo;
+import com.sigelab.model.Laboratorio;
 import com.sigelab.model.TipoEquipo;
+import com.sigelab.model.EstadoEquipo;
+import com.sigelab.controller.EquipoController;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -16,7 +17,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
-public class EquipoView extends JPanel {
+public class EquipoView extends JFrame {
 
     private final EquipoController controller = new EquipoController();
 
@@ -38,7 +39,8 @@ public class EquipoView extends JPanel {
     private final JButton btnActualizar = new JButton("Actualizar");
     private final JButton btnBuscar = new JButton("Buscar por código");
     private final JButton btnRecargar = new JButton("Recargar");
-
+    private final JButton btnRegresar = new JButton("Regresar al menú");
+    private final JButton btnEliminar = new JButton("Eliminar");
     private final DefaultTableModel modeloTabla = new DefaultTableModel(
             new String[]{
                     "ID", "Código", "Nombre", "Tipo",
@@ -56,19 +58,34 @@ public class EquipoView extends JPanel {
 
     private int idSeleccionado = 0;
     private boolean ocupado = false;
-
+    private final boolean esAdmin;
     public EquipoView() {
+        this(false);
+    }
+
+    public EquipoView(boolean esAdmin) {
+        this.esAdmin = esAdmin;
+        setTitle("SIGELAB - Administración de Equipos");
+
+        setSize(1000, 650);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        ((JComponent) getContentPane()).setBorder(
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)
+        );
 
         JLabel titulo = new JLabel(
-                "ADMINISTRACIÓN DE EQUIPOS", SwingConstants.CENTER
+                "ADMINISTRACIÓN DE EQUIPOS",
+                SwingConstants.CENTER
         );
-        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 18f));
+        titulo.setFont(new Font("Arial", Font.BOLD, 18));
 
         txtId.setEditable(false);
 
         JPanel formulario = new JPanel(new GridLayout(10, 2, 8, 5));
+
         agregarCampo(formulario, "ID (automático):", txtId);
         agregarCampo(formulario, "Código de inventario:", txtCodigo);
         agregarCampo(formulario, "Nombre:", txtNombre);
@@ -87,6 +104,10 @@ public class EquipoView extends JPanel {
         botones.add(btnBuscar);
         botones.add(btnRecargar);
 
+        btnEliminar.setVisible(esAdmin);
+        botones.add(btnEliminar);
+
+        botones.add(btnRegresar);
         JPanel superior = new JPanel(new BorderLayout(8, 8));
         superior.add(titulo, BorderLayout.NORTH);
         superior.add(formulario, BorderLayout.CENTER);
@@ -98,22 +119,25 @@ public class EquipoView extends JPanel {
 
         add(superior, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
-        TemaWindowsClasico.aplicar(this);
-        TemaWindowsClasico.aplicarTitulo(titulo);
-        TemaWindowsClasico.aplicarTabla(tabla);
-        btnNuevo.addActionListener(evento -> limpiarFormulario());
-        btnGuardar.addActionListener(evento -> guardar());
-        btnActualizar.addActionListener(evento -> actualizar());
-        btnBuscar.addActionListener(evento -> buscar());
-        btnRecargar.addActionListener(evento -> cargarDatos());
 
-        tabla.getSelectionModel().addListSelectionListener(evento -> {
-            if (!evento.getValueIsAdjusting() && !ocupado) {
+        btnNuevo.addActionListener(e -> limpiarFormulario());
+        btnGuardar.addActionListener(e -> guardar());
+        btnActualizar.addActionListener(e -> actualizar());
+        btnBuscar.addActionListener(e -> buscar());
+        btnRecargar.addActionListener(e -> cargarDatos());
+        btnEliminar.addActionListener(e -> eliminar());
+        btnRegresar.addActionListener(e -> dispose());
+
+        tabla.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && !ocupado) {
                 int fila = tabla.getSelectedRow();
 
                 if (fila >= 0) {
                     int indice = tabla.convertRowIndexToModel(fila);
-                    mostrarEquipo(equipos.get(indice));
+
+                    if (indice >= 0 && indice < equipos.size()) {
+                        mostrarEquipo(equipos.get(indice));
+                    }
                 }
             }
         });
@@ -123,90 +147,115 @@ public class EquipoView extends JPanel {
     }
 
     private void agregarCampo(
-            JPanel formulario, String etiqueta, JComponent campo
+            JPanel panel,
+            String etiqueta,
+            JComponent campo
     ) {
-        formulario.add(new JLabel(etiqueta));
-        formulario.add(campo);
+        panel.add(new JLabel(etiqueta));
+        panel.add(campo);
     }
 
     private void cargarDatos() {
-        ejecutar(() -> new Datos(
-                controller.listarTipos(),
-                controller.listarLaboratorios(),
-                controller.listar()
-        ), datos -> {
-            cmbTipo.removeAllItems();
-            for (TipoEquipo tipo : datos.tipos()) {
-                cmbTipo.addItem(tipo);
-            }
+        ejecutar(
+                () -> new Datos(
+                        controller.listarTipos(),
+                        controller.listarLaboratorios(),
+                        controller.listar()
+                ),
+                datos -> {
+                    cmbTipo.removeAllItems();
 
-            cmbLaboratorio.removeAllItems();
-            for (Laboratorio laboratorio : datos.laboratorios()) {
-                cmbLaboratorio.addItem(laboratorio);
-            }
+                    for (TipoEquipo tipo : datos.tipos()) {
+                        cmbTipo.addItem(tipo);
+                    }
 
-            limpiarFormulario();
-            equipos = datos.equipos();
-            modeloTabla.setRowCount(0);
+                    cmbLaboratorio.removeAllItems();
 
-            for (Equipo equipo : equipos) {
-                modeloTabla.addRow(new Object[]{
-                        equipo.getId(),
-                        equipo.getCodigoInventario(),
-                        equipo.getNombre(),
-                        equipo.getTipoEquipo().getNombre(),
-                        equipo.getMarca(),
-                        equipo.getModelo(),
-                        equipo.getSerie(),
-                        equipo.getLaboratorio().getCodigo(),
-                        equipo.getEstado()
-                });
-            }
-        });
+                    for (Laboratorio lab : datos.laboratorios()) {
+                        cmbLaboratorio.addItem(lab);
+                    }
+
+                    equipos = datos.equipos();
+                    modeloTabla.setRowCount(0);
+
+                    for (Equipo eq : equipos) {
+                        String nombreLab =
+                                eq.getLaboratorio() != null
+                                        ? eq.getLaboratorio().getCodigo()
+                                        : "N/A";
+
+                        modeloTabla.addRow(new Object[]{
+                                eq.getId(),
+                                eq.getCodigoInventario(),
+                                eq.getNombre(),
+                                eq.getTipoEquipo() != null
+                                        ? eq.getTipoEquipo().getNombre()
+                                        : "N/A",
+                                eq.getMarca(),
+                                eq.getModelo(),
+                                eq.getSerie(),
+                                nombreLab,
+                                eq.getEstado()
+                        });
+                    }
+
+                    limpiarFormulario();
+                }
+        );
     }
 
     private Equipo leerFormulario() {
-        Equipo equipo = new Equipo();
+        Equipo eq = new Equipo();
 
-        equipo.setId(idSeleccionado);
-        equipo.setCodigoInventario(txtCodigo.getText());
-        equipo.setNombre(txtNombre.getText());
-        equipo.setTipoEquipo((TipoEquipo) cmbTipo.getSelectedItem());
-        equipo.setMarca(txtMarca.getText());
-        equipo.setModelo(txtModelo.getText());
-        equipo.setSerie(txtSerie.getText());
-        equipo.setLaboratorio(
+        eq.setId(idSeleccionado);
+        eq.setCodigoInventario(txtCodigo.getText().trim());
+        eq.setNombre(txtNombre.getText().trim());
+        eq.setTipoEquipo((TipoEquipo) cmbTipo.getSelectedItem());
+        eq.setMarca(txtMarca.getText().trim());
+        eq.setModelo(txtModelo.getText().trim());
+        eq.setSerie(txtSerie.getText().trim());
+        eq.setLaboratorio(
                 (Laboratorio) cmbLaboratorio.getSelectedItem()
         );
-        equipo.setEstado((EstadoEquipo) cmbEstado.getSelectedItem());
-        equipo.setObservaciones(txtObservaciones.getText());
+        eq.setEstado((EstadoEquipo) cmbEstado.getSelectedItem());
+        eq.setObservaciones(txtObservaciones.getText().trim());
 
-        return equipo;
+        return eq;
     }
 
     private void guardar() {
-        Equipo equipo = leerFormulario();
+        Equipo eq = leerFormulario();
 
         ejecutar(() -> {
-            controller.guardar(equipo);
-            return equipo.getId();
+            controller.guardar(eq);
+            return eq.getId();
         }, id -> {
             JOptionPane.showMessageDialog(
-                    this, "Equipo guardado. ID: " + id
+                    this,
+                    "Equipo guardado con éxito. ID: " + id
             );
             cargarDatos();
         });
     }
 
     private void actualizar() {
-        Equipo equipo = leerFormulario();
+        if (idSeleccionado <= 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Selecciona un equipo para actualizar."
+            );
+            return;
+        }
+
+        Equipo eq = leerFormulario();
 
         ejecutar(() -> {
-            controller.actualizar(equipo);
+            controller.actualizar(eq);
             return true;
         }, resultado -> {
             JOptionPane.showMessageDialog(
-                    this, "Equipo actualizado correctamente."
+                    this,
+                    "Equipo actualizado correctamente."
             );
             cargarDatos();
         });
@@ -214,45 +263,60 @@ public class EquipoView extends JPanel {
 
     private void buscar() {
         String codigo = JOptionPane.showInputDialog(
-                this, "Escribe el código de inventario:"
+                this,
+                "Escribe el código de inventario:"
         );
 
-        if (codigo == null) {
+        if (codigo == null || codigo.isBlank()) {
             return;
         }
 
-        ejecutar(() -> controller.buscarPorCodigo(codigo), equipo -> {
-            if (equipo == null) {
+        ejecutar(() -> controller.buscarPorCodigo(codigo.trim()), eq -> {
+            if (eq == null) {
                 JOptionPane.showMessageDialog(
-                        this, "No existe un equipo con ese código."
+                        this,
+                        "No existe un equipo con ese código."
                 );
             } else {
                 tabla.clearSelection();
-                mostrarEquipo(equipo);
+                mostrarEquipo(eq);
             }
         });
     }
 
-    private void mostrarEquipo(Equipo equipo) {
-        idSeleccionado = equipo.getId();
+    private void mostrarEquipo(Equipo eq) {
+        idSeleccionado = eq.getId();
 
-        txtId.setText(String.valueOf(equipo.getId()));
-        txtCodigo.setText(equipo.getCodigoInventario());
-        txtNombre.setText(equipo.getNombre());
-        txtMarca.setText(equipo.getMarca());
-        txtModelo.setText(equipo.getModelo());
-        txtSerie.setText(equipo.getSerie());
-        txtObservaciones.setText(equipo.getObservaciones());
-        cmbEstado.setSelectedItem(equipo.getEstado());
+        txtId.setText(String.valueOf(eq.getId()));
+        txtCodigo.setText(eq.getCodigoInventario());
+        txtNombre.setText(eq.getNombre());
+        txtMarca.setText(eq.getMarca());
+        txtModelo.setText(eq.getModelo());
+        txtSerie.setText(eq.getSerie());
+        txtObservaciones.setText(eq.getObservaciones());
 
-        seleccionarTipo(equipo.getTipoEquipo());
-        seleccionarLaboratorio(equipo.getLaboratorio());
+        cmbEstado.setSelectedItem(eq.getEstado());
+
+        if (eq.getTipoEquipo() != null) {
+            seleccionarTipo(eq.getTipoEquipo());
+        } else {
+            cmbTipo.setSelectedIndex(-1);
+        }
+
+        if (eq.getLaboratorio() != null) {
+            seleccionarLaboratorio(eq.getLaboratorio());
+        } else {
+            cmbLaboratorio.setSelectedIndex(-1);
+        }
+
         actualizarBotones();
     }
 
     private void seleccionarTipo(TipoEquipo tipo) {
         for (int i = 0; i < cmbTipo.getItemCount(); i++) {
-            if (cmbTipo.getItemAt(i).getId() == tipo.getId()) {
+            TipoEquipo actual = cmbTipo.getItemAt(i);
+
+            if (actual.getId() == tipo.getId()) {
                 cmbTipo.setSelectedIndex(i);
                 return;
             }
@@ -262,22 +326,23 @@ public class EquipoView extends JPanel {
         cmbTipo.setSelectedIndex(cmbTipo.getItemCount() - 1);
     }
 
-    private void seleccionarLaboratorio(Laboratorio laboratorio) {
+    private void seleccionarLaboratorio(Laboratorio lab) {
         for (int i = 0; i < cmbLaboratorio.getItemCount(); i++) {
-            if (cmbLaboratorio.getItemAt(i).getId() == laboratorio.getId()) {
+            Laboratorio actual = cmbLaboratorio.getItemAt(i);
+
+            if (actual.getId() == lab.getId()) {
                 cmbLaboratorio.setSelectedIndex(i);
                 return;
             }
         }
 
-        cmbLaboratorio.addItem(laboratorio);
-        cmbLaboratorio.setSelectedIndex(
-                cmbLaboratorio.getItemCount() - 1
-        );
+        cmbLaboratorio.addItem(lab);
+        cmbLaboratorio.setSelectedIndex(cmbLaboratorio.getItemCount() - 1);
     }
 
     private void limpiarFormulario() {
         idSeleccionado = 0;
+
         tabla.clearSelection();
 
         txtId.setText("");
@@ -301,21 +366,11 @@ public class EquipoView extends JPanel {
         btnActualizar.setEnabled(!ocupado && idSeleccionado > 0);
         btnBuscar.setEnabled(!ocupado);
         btnRecargar.setEnabled(!ocupado);
-
-        tabla.setEnabled(!ocupado);
-        txtCodigo.setEnabled(!ocupado);
-        txtNombre.setEnabled(!ocupado);
-        txtMarca.setEnabled(!ocupado);
-        txtModelo.setEnabled(!ocupado);
-        txtSerie.setEnabled(!ocupado);
-        txtObservaciones.setEnabled(!ocupado);
-        cmbTipo.setEnabled(!ocupado);
-        cmbLaboratorio.setEnabled(!ocupado);
-        cmbEstado.setEnabled(!ocupado);
     }
 
     private <T> void ejecutar(
-            Callable<T> tarea, Consumer<T> alTerminar
+            Callable<T> tarea,
+            Consumer<T> alTerminar
     ) {
         if (ocupado) {
             return;
@@ -325,6 +380,7 @@ public class EquipoView extends JPanel {
         actualizarBotones();
 
         new SwingWorker<T, Void>() {
+
             @Override
             protected T doInBackground() throws Exception {
                 return tarea.call();
@@ -337,21 +393,30 @@ public class EquipoView extends JPanel {
 
                 try {
                     alTerminar.accept(get());
+
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     mostrarError("La operación fue interrumpida.");
+
                 } catch (ExecutionException ex) {
                     Throwable causa = ex.getCause();
 
                     if (causa instanceof SQLException sql
                             && (sql.getErrorCode() == 2601
                             || sql.getErrorCode() == 2627)) {
+
                         mostrarError(
                                 "Ya existe un equipo con ese código."
                         );
+
                     } else {
-                        mostrarError(causa.getMessage());
+                        mostrarError(
+                                causa != null
+                                        ? causa.getMessage()
+                                        : ex.getMessage()
+                        );
                     }
+
                 } catch (RuntimeException ex) {
                     mostrarError(ex.getMessage());
                 }
@@ -362,8 +427,7 @@ public class EquipoView extends JPanel {
     private void mostrarError(String mensaje) {
         JOptionPane.showMessageDialog(
                 this,
-                mensaje == null ? "No se pudo completar la operación."
-                        : mensaje,
+                mensaje == null ? "Ocurrió un error." : mensaje,
                 "Error",
                 JOptionPane.ERROR_MESSAGE
         );
@@ -374,5 +438,66 @@ public class EquipoView extends JPanel {
             List<Laboratorio> laboratorios,
             List<Equipo> equipos
     ) {
+    }
+    private void eliminar() {
+        if (!esAdmin) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Esta función requiere privilegios de administrador.",
+                    "Permisos insuficientes",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        if (idSeleccionado <= 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un equipo de la tabla.",
+                    "Equipo no seleccionado",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro de eliminar el equipo seleccionado?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (respuesta != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            boolean eliminado = controller.eliminar(idSeleccionado);
+
+            if (eliminado) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Equipo eliminado correctamente."
+                );
+
+                cargarDatos();
+                limpiarFormulario();
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "No se encontró el equipo.",
+                        "No eliminado",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
+        } catch (SQLException | IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo eliminar el equipo.\n" + ex.getMessage(),
+                    "Error al eliminar",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }
