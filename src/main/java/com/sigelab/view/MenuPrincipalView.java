@@ -295,7 +295,7 @@ public class MenuPrincipalView extends JFrame {
                     ventanaLab.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                     ventanaLab.setSize(1000, 650);
                     ventanaLab.setLocationRelativeTo(this);
-                    ventanaLab.add(new LaboratorioView());
+                    ventanaLab.add(new LaboratorioView(esAdmin));
                     ventanaLab.setVisible(true);
                 }
             });

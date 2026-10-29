@@ -1,8 +1,8 @@
 
-package org.example.repository;
+package com.sigelab.repository;
 
 import com.sigelab.repository.ConexionBD;
-import org.example.model.Laboratorio;
+import com.sigelab.model.Laboratorio;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,19 +14,19 @@ import java.util.List;
 
 public class LaboratorioRepository {
 
+    // Guardar un laboratorio nuevo.
     public void guardar(Laboratorio laboratorio) throws SQLException {
+
         String sql = """
                 INSERT INTO dbo.Laboratorio
                     (codigo, nombre, ubicacion, capacidad, estado)
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
-        try (
-                Connection conexion = ConexionBD.obtenerConexion();
-                PreparedStatement consulta = conexion.prepareStatement(
-                        sql, Statement.RETURN_GENERATED_KEYS
-                )
-        ) {
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement consulta = conexion.prepareStatement(
+                     sql, Statement.RETURN_GENERATED_KEYS)) {
+
             colocarDatos(consulta, laboratorio);
 
             if (consulta.executeUpdate() != 1) {
@@ -41,7 +41,9 @@ public class LaboratorioRepository {
         }
     }
 
+    // Listar todos los laboratorios.
     public List<Laboratorio> listar() throws SQLException {
+
         List<Laboratorio> laboratorios = new ArrayList<>();
 
         String sql = """
@@ -50,11 +52,10 @@ public class LaboratorioRepository {
                 ORDER BY id
                 """;
 
-        try (
-                Connection conexion = ConexionBD.obtenerConexion();
-                PreparedStatement consulta = conexion.prepareStatement(sql);
-                ResultSet resultado = consulta.executeQuery()
-        ) {
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement consulta = conexion.prepareStatement(sql);
+             ResultSet resultado = consulta.executeQuery()) {
+
             while (resultado.next()) {
                 laboratorios.add(convertirLaboratorio(resultado));
             }
@@ -63,17 +64,19 @@ public class LaboratorioRepository {
         return laboratorios;
     }
 
-    public Laboratorio buscarPorCodigo(String codigo) throws SQLException {
+    // Buscar un laboratorio por código.
+    public Laboratorio buscarPorCodigo(String codigo)
+            throws SQLException {
+
         String sql = """
                 SELECT id, codigo, nombre, ubicacion, capacidad, estado
                 FROM dbo.Laboratorio
                 WHERE codigo = ?
                 """;
 
-        try (
-                Connection conexion = ConexionBD.obtenerConexion();
-                PreparedStatement consulta = conexion.prepareStatement(sql)
-        ) {
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement consulta = conexion.prepareStatement(sql)) {
+
             consulta.setString(1, codigo);
 
             try (ResultSet resultado = consulta.executeQuery()) {
@@ -86,18 +89,23 @@ public class LaboratorioRepository {
         return null;
     }
 
-    public boolean actualizar(Laboratorio laboratorio) throws SQLException {
+    // Actualizar un laboratorio existente.
+    public boolean actualizar(Laboratorio laboratorio)
+            throws SQLException {
+
         String sql = """
                 UPDATE dbo.Laboratorio
-                SET codigo = ?, nombre = ?, ubicacion = ?,
-                    capacidad = ?, estado = ?
+                SET codigo = ?,
+                    nombre = ?,
+                    ubicacion = ?,
+                    capacidad = ?,
+                    estado = ?
                 WHERE id = ?
                 """;
 
-        try (
-                Connection conexion = ConexionBD.obtenerConexion();
-                PreparedStatement consulta = conexion.prepareStatement(sql)
-        ) {
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement consulta = conexion.prepareStatement(sql)) {
+
             colocarDatos(consulta, laboratorio);
             consulta.setInt(6, laboratorio.getId());
 
@@ -105,10 +113,12 @@ public class LaboratorioRepository {
         }
     }
 
+    // Asignar los datos a los parámetros SQL.
     private void colocarDatos(
             PreparedStatement consulta,
             Laboratorio laboratorio
     ) throws SQLException {
+
         consulta.setString(1, laboratorio.getCodigo());
         consulta.setString(2, laboratorio.getNombre());
         consulta.setString(3, laboratorio.getUbicacion());
@@ -116,9 +126,10 @@ public class LaboratorioRepository {
         consulta.setString(5, laboratorio.getEstado());
     }
 
-    private Laboratorio convertirLaboratorio(
-            ResultSet resultado
-    ) throws SQLException {
+    // Convertir una fila de SQL Server en un objeto Laboratorio.
+    private Laboratorio convertirLaboratorio(ResultSet resultado)
+            throws SQLException {
+
         return new Laboratorio(
                 resultado.getInt("id"),
                 resultado.getString("codigo"),
@@ -127,5 +138,17 @@ public class LaboratorioRepository {
                 resultado.getInt("capacidad"),
                 resultado.getString("estado")
         );
+    }
+
+    // Eliminar un laboratorio por su ID
+    public boolean eliminar(int id) throws SQLException {
+        String sql = "DELETE FROM dbo.Laboratorio WHERE id = ?";
+
+        try (Connection conexion = ConexionBD.obtenerConexion();
+             PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
+            sentencia.setInt(1, id);
+            return sentencia.executeUpdate() > 0;
+        }
     }
 }

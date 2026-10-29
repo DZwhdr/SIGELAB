@@ -1,7 +1,8 @@
-package org.example.view;
 
-import org.example.controller.LaboratorioController;
-import org.example.model.Laboratorio;
+package com.sigelab.view;
+
+import com.sigelab.controller.LaboratorioController;
+import com.sigelab.model.Laboratorio;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -35,12 +36,17 @@ public class LaboratorioView extends JPanel {
     private final JButton btnGuardar = new JButton("Guardar");
     private final JButton btnActualizar = new JButton("Actualizar");
     private final JButton btnBuscar = new JButton("Buscar");
-
+    private final JButton btnEliminar = new JButton("Eliminar");
+    private final JButton btnRegresar = new JButton("Regresar al menú");
     private final DefaultTableModel modeloTabla =
             new DefaultTableModel(
                     new String[]{
-                            "ID", "Código", "Nombre",
-                            "Ubicación", "Capacidad", "Estado"
+                            "ID",
+                            "Código",
+                            "Nombre",
+                            "Ubicación",
+                            "Capacidad",
+                            "Estado"
                     }, 0
             ) {
                 @Override
@@ -50,9 +56,16 @@ public class LaboratorioView extends JPanel {
             };
 
     private final JTable tabla = new JTable(modeloTabla);
-    private boolean ocupado;
+
+    private boolean ocupado = false;
+    private final boolean esAdmin;
 
     public LaboratorioView() {
+        this(false);
+    }
+
+    public LaboratorioView(boolean esAdmin) {
+        this.esAdmin = esAdmin;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
@@ -63,41 +76,65 @@ public class LaboratorioView extends JPanel {
 
         titulo.setFont(new Font("Arial", Font.BOLD, 20));
 
-        JPanel formulario = new JPanel(new GridLayout(6, 2, 10, 8));
+        JPanel formulario = new JPanel(
+                new GridLayout(6, 2, 10, 8)
+        );
 
         txtId.setEditable(false);
 
         formulario.add(new JLabel("ID:"));
         formulario.add(txtId);
+
         formulario.add(new JLabel("Código:"));
         formulario.add(txtCodigo);
+
         formulario.add(new JLabel("Nombre:"));
         formulario.add(txtNombre);
+
         formulario.add(new JLabel("Ubicación:"));
         formulario.add(txtUbicacion);
+
         formulario.add(new JLabel("Capacidad:"));
         formulario.add(spnCapacidad);
+
         formulario.add(new JLabel("Estado:"));
         formulario.add(cmbEstado);
 
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel botones = new JPanel(
+                new FlowLayout(FlowLayout.CENTER)
+        );
+
         botones.add(btnNuevo);
         botones.add(btnGuardar);
         botones.add(btnActualizar);
         botones.add(btnBuscar);
 
-        JPanel parteSuperior = new JPanel(new BorderLayout(10, 15));
+        btnEliminar.setVisible(esAdmin);
+        botones.add(btnEliminar);
+
+        botones.add(btnRegresar);
+        JPanel parteSuperior = new JPanel(
+                new BorderLayout(10, 15)
+        );
+
         parteSuperior.add(titulo, BorderLayout.NORTH);
         parteSuperior.add(formulario, BorderLayout.CENTER);
         parteSuperior.add(botones, BorderLayout.SOUTH);
 
-        tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tabla.setSelectionMode(
+                ListSelectionModel.SINGLE_SELECTION
+        );
+
+        tabla.setAutoCreateRowSorter(true);
 
         add(parteSuperior, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
+
+        // Aplicar el tema si la clase está disponible.
         TemaWindowsClasico.aplicar(this);
         TemaWindowsClasico.aplicarTitulo(titulo);
         TemaWindowsClasico.aplicarTabla(tabla);
+
         btnNuevo.addActionListener(evento -> {
             limpiarFormulario();
             cargarTabla();
@@ -106,6 +143,14 @@ public class LaboratorioView extends JPanel {
         btnGuardar.addActionListener(evento -> guardar());
         btnActualizar.addActionListener(evento -> actualizar());
         btnBuscar.addActionListener(evento -> buscar());
+        btnEliminar.addActionListener(evento -> eliminar());
+        btnRegresar.addActionListener(evento -> {
+            java.awt.Window ventana = SwingUtilities.getWindowAncestor(this);
+
+            if (ventana != null) {
+                ventana.dispose();
+            }
+        });
 
         tabla.getSelectionModel().addListSelectionListener(evento -> {
             if (!evento.getValueIsAdjusting() && !ocupado) {
@@ -121,7 +166,18 @@ public class LaboratorioView extends JPanel {
     private int leerCapacidad() {
         try {
             spnCapacidad.commitEdit();
-            return ((Number) spnCapacidad.getValue()).intValue();
+
+            int capacidad = ((Number) spnCapacidad.getValue())
+                    .intValue();
+
+            if (capacidad <= 0) {
+                throw new IllegalArgumentException(
+                        "La capacidad debe ser mayor que cero."
+                );
+            }
+
+            return capacidad;
+
         } catch (ParseException error) {
             throw new IllegalArgumentException(
                     "Escribe una capacidad válida mayor que cero."
@@ -131,26 +187,36 @@ public class LaboratorioView extends JPanel {
 
     private void guardar() {
         try {
-            String codigo = txtCodigo.getText();
-            String nombre = txtNombre.getText();
-            String ubicacion = txtUbicacion.getText();
+            String codigo = txtCodigo.getText().strip();
+            String nombre = txtNombre.getText().strip();
+            String ubicacion = txtUbicacion.getText().strip();
             int capacidad = leerCapacidad();
             String estado = (String) cmbEstado.getSelectedItem();
 
+            validarFormulario(codigo, nombre, ubicacion, estado);
+
             ejecutar(
                     () -> controller.guardar(
-                            codigo, nombre, ubicacion, capacidad, estado
+                            codigo,
+                            nombre,
+                            ubicacion,
+                            capacidad,
+                            estado
                     ),
                     laboratorio -> {
                         JOptionPane.showMessageDialog(
                                 this,
-                                "Laboratorio guardado. ID: "
-                                        + laboratorio.getId()
+                                "Laboratorio guardado correctamente. ID: "
+                                        + laboratorio.getId(),
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE
                         );
+
                         limpiarFormulario();
                         cargarTabla();
                     }
             );
+
         } catch (IllegalArgumentException error) {
             mostrarError(error);
         }
@@ -165,28 +231,41 @@ public class LaboratorioView extends JPanel {
             }
 
             int id = Integer.parseInt(txtId.getText());
-            String codigo = txtCodigo.getText();
-            String nombre = txtNombre.getText();
-            String ubicacion = txtUbicacion.getText();
+
+            String codigo = txtCodigo.getText().strip();
+            String nombre = txtNombre.getText().strip();
+            String ubicacion = txtUbicacion.getText().strip();
             int capacidad = leerCapacidad();
             String estado = (String) cmbEstado.getSelectedItem();
+
+            validarFormulario(codigo, nombre, ubicacion, estado);
 
             ejecutar(
                     () -> {
                         controller.actualizar(
-                                id, codigo, nombre,
-                                ubicacion, capacidad, estado
+                                id,
+                                codigo,
+                                nombre,
+                                ubicacion,
+                                capacidad,
+                                estado
                         );
+
                         return true;
                     },
                     resultado -> {
                         JOptionPane.showMessageDialog(
-                                this, "Laboratorio actualizado."
+                                this,
+                                "Laboratorio actualizado correctamente.",
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE
                         );
+
                         limpiarFormulario();
                         cargarTabla();
                     }
             );
+
         } catch (IllegalArgumentException error) {
             mostrarError(error);
         }
@@ -194,19 +273,32 @@ public class LaboratorioView extends JPanel {
 
     private void buscar() {
         String codigo = JOptionPane.showInputDialog(
-                this, "Escribe el código del laboratorio:"
+                this,
+                "Escribe el código del laboratorio:"
         );
 
         if (codigo == null) {
             return;
         }
 
+        if (codigo.isBlank()) {
+            mostrarError(
+                    new IllegalArgumentException(
+                            "Debes escribir un código para buscar."
+                    )
+            );
+            return;
+        }
+
         ejecutar(
-                () -> controller.buscarPorCodigo(codigo),
+                () -> controller.buscarPorCodigo(codigo.strip()),
                 laboratorio -> {
                     if (laboratorio == null) {
                         JOptionPane.showMessageDialog(
-                                this, "No existe un laboratorio con ese código."
+                                this,
+                                "No existe un laboratorio con ese código.",
+                                "Sin resultados",
+                                JOptionPane.INFORMATION_MESSAGE
                         );
                     } else {
                         tabla.clearSelection();
@@ -244,14 +336,16 @@ public class LaboratorioView extends JPanel {
 
         fila = tabla.convertRowIndexToModel(fila);
 
-        mostrarLaboratorio(new Laboratorio(
+        Laboratorio laboratorio = new Laboratorio(
                 ((Number) modeloTabla.getValueAt(fila, 0)).intValue(),
                 (String) modeloTabla.getValueAt(fila, 1),
                 (String) modeloTabla.getValueAt(fila, 2),
                 (String) modeloTabla.getValueAt(fila, 3),
                 ((Number) modeloTabla.getValueAt(fila, 4)).intValue(),
                 (String) modeloTabla.getValueAt(fila, 5)
-        ));
+        );
+
+        mostrarLaboratorio(laboratorio);
     }
 
     private void mostrarLaboratorio(Laboratorio laboratorio) {
@@ -259,21 +353,61 @@ public class LaboratorioView extends JPanel {
         txtCodigo.setText(laboratorio.getCodigo());
         txtNombre.setText(laboratorio.getNombre());
         txtUbicacion.setText(laboratorio.getUbicacion());
-        spnCapacidad.setValue(laboratorio.getCapacidad());
+
+        spnCapacidad.setValue(
+                Math.max(1, laboratorio.getCapacidad())
+        );
+
         cmbEstado.setSelectedItem(laboratorio.getEstado());
+
         actualizarControles();
     }
 
     private void limpiarFormulario() {
         tabla.clearSelection();
+
         txtId.setText("");
         txtCodigo.setText("");
         txtNombre.setText("");
         txtUbicacion.setText("");
+
         spnCapacidad.setValue(1);
         cmbEstado.setSelectedItem("ACTIVO");
+
         actualizarControles();
+
         txtCodigo.requestFocusInWindow();
+    }
+
+    private void validarFormulario(
+            String codigo,
+            String nombre,
+            String ubicacion,
+            String estado
+    ) {
+        if (codigo.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El código del laboratorio es obligatorio."
+            );
+        }
+
+        if (nombre.isBlank()) {
+            throw new IllegalArgumentException(
+                    "El nombre del laboratorio es obligatorio."
+            );
+        }
+
+        if (ubicacion.isBlank()) {
+            throw new IllegalArgumentException(
+                    "La ubicación del laboratorio es obligatoria."
+            );
+        }
+
+        if (estado == null || estado.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Selecciona el estado del laboratorio."
+            );
+        }
     }
 
     private void actualizarControles() {
@@ -304,6 +438,7 @@ public class LaboratorioView extends JPanel {
         actualizarControles();
 
         new SwingWorker<T, Void>() {
+
             @Override
             protected T doInBackground() throws Exception {
                 return tarea.call();
@@ -315,12 +450,19 @@ public class LaboratorioView extends JPanel {
                 actualizarControles();
 
                 try {
-                    alTerminar.accept(get());
+                    T resultado = get();
+                    alTerminar.accept(resultado);
+
                 } catch (InterruptedException error) {
                     Thread.currentThread().interrupt();
                     mostrarError(error);
+
                 } catch (ExecutionException error) {
-                    mostrarError(error.getCause());
+                    Throwable causa = error.getCause();
+
+                    mostrarError(
+                            causa != null ? causa : error
+                    );
                 }
             }
         }.execute();
@@ -338,9 +480,78 @@ public class LaboratorioView extends JPanel {
 
         JOptionPane.showMessageDialog(
                 this,
-                mensaje == null ? "Ocurrió un error." : mensaje,
+                mensaje == null
+                        ? "Ocurrió un error inesperado."
+                        : mensaje,
                 "Error",
                 JOptionPane.ERROR_MESSAGE
         );
+    }
+
+    // Eliminar el laboratorio seleccionado
+    private void eliminar() {
+        if (!esAdmin) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Esta función requiere privilegios de administrador.",
+                    "Permisos insuficientes",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        String textoId = txtId.getText().trim();
+
+        if (textoId.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un laboratorio de la tabla.",
+                    "Laboratorio no seleccionado",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        int respuesta = JOptionPane.showConfirmDialog(
+                this,
+                "¿Está seguro de eliminar el laboratorio seleccionado?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (respuesta != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(textoId);
+            boolean eliminado = controller.eliminar(id);
+
+            if (eliminado) {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Laboratorio eliminado correctamente."
+                );
+
+                cargarTabla();
+                limpiarFormulario();
+            } else {
+                JOptionPane.showMessageDialog(
+                        this,
+                        "No se encontró el laboratorio.",
+                        "No eliminado",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
+        } catch (SQLException | IllegalArgumentException error) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo eliminar el laboratorio.\n"
+                            + error.getMessage(),
+                    "Error al eliminar",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 }

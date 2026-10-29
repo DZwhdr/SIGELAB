@@ -1,7 +1,8 @@
-package org.example.service;
 
-import org.example.model.Laboratorio;
-import org.example.repository.LaboratorioRepository;
+package com.sigelab.service;
+
+import com.sigelab.model.Laboratorio;
+import com.sigelab.repository.LaboratorioRepository;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -11,12 +12,13 @@ public class LaboratorioService {
     private final LaboratorioRepository repository =
             new LaboratorioRepository();
 
+    // Registrar un laboratorio nuevo
     public void guardar(Laboratorio laboratorio) throws SQLException {
         validar(laboratorio);
 
         if (laboratorio.getId() != 0) {
             throw new IllegalArgumentException(
-                    "Para guardar uno nuevo, presiona Nuevo."
+                    "Para guardar un laboratorio nuevo, presiona Nuevo."
             );
         }
 
@@ -24,6 +26,7 @@ public class LaboratorioService {
         repository.guardar(laboratorio);
     }
 
+    // Actualizar un laboratorio existente
     public void actualizar(Laboratorio laboratorio) throws SQLException {
         validar(laboratorio);
 
@@ -37,34 +40,47 @@ public class LaboratorioService {
 
         if (!repository.actualizar(laboratorio)) {
             throw new IllegalArgumentException(
-                    "El laboratorio ya no existe."
+                    "El laboratorio ya no existe en la base de datos."
             );
         }
     }
 
+    // Listar todos los laboratorios
     public List<Laboratorio> listar() throws SQLException {
         return repository.listar();
     }
 
-    public Laboratorio buscarPorCodigo(String codigo) throws SQLException {
-        String codigoLimpio = validarTexto(codigo, "Código", 20);
+    // Buscar un laboratorio por su código
+    public Laboratorio buscarPorCodigo(String codigo)
+            throws SQLException {
+
+        String codigoLimpio = validarTexto(
+                codigo,
+                "Código",
+                20
+        );
+
         return repository.buscarPorCodigo(codigoLimpio);
     }
 
-    private void comprobarCodigoDisponible(
-            Laboratorio laboratorio
-    ) throws SQLException {
-        Laboratorio existente =
-                repository.buscarPorCodigo(laboratorio.getCodigo());
+    // Comprobar que el código no esté asignado a otro laboratorio
+    private void comprobarCodigoDisponible(Laboratorio laboratorio)
+            throws SQLException {
+
+        Laboratorio existente = repository.buscarPorCodigo(
+                laboratorio.getCodigo()
+        );
 
         if (existente != null
                 && existente.getId() != laboratorio.getId()) {
+
             throw new IllegalArgumentException(
                     "Ya existe otro laboratorio con ese código."
             );
         }
     }
 
+    // Validar los datos del laboratorio
     private void validar(Laboratorio laboratorio) {
         if (laboratorio == null) {
             throw new IllegalArgumentException(
@@ -73,13 +89,27 @@ public class LaboratorioService {
         }
 
         laboratorio.setCodigo(
-                validarTexto(laboratorio.getCodigo(), "Código", 20)
+                validarTexto(
+                        laboratorio.getCodigo(),
+                        "Código",
+                        20
+                )
         );
+
         laboratorio.setNombre(
-                validarTexto(laboratorio.getNombre(), "Nombre", 100)
+                validarTexto(
+                        laboratorio.getNombre(),
+                        "Nombre",
+                        100
+                )
         );
+
         laboratorio.setUbicacion(
-                validarTexto(laboratorio.getUbicacion(), "Ubicación", 150)
+                validarTexto(
+                        laboratorio.getUbicacion(),
+                        "Ubicación",
+                        150
+                )
         );
 
         if (laboratorio.getCapacidad() <= 0) {
@@ -88,16 +118,24 @@ public class LaboratorioService {
             );
         }
 
-        String estado = laboratorio.getEstado();
+        String estado = validarTexto(
+                laboratorio.getEstado(),
+                "Estado",
+                30
+        ).toUpperCase();
 
-        if (!"ACTIVO".equals(estado)
-                && !"INACTIVO".equals(estado)) {
+        if (!estado.equals("ACTIVO")
+                && !estado.equals("INACTIVO")) {
+
             throw new IllegalArgumentException(
                     "El estado debe ser ACTIVO o INACTIVO."
             );
         }
+
+        laboratorio.setEstado(estado);
     }
 
+    // Validar textos obligatorios y su longitud máxima
     private String validarTexto(
             String texto,
             String campo,
@@ -113,10 +151,24 @@ public class LaboratorioService {
 
         if (textoLimpio.length() > limite) {
             throw new IllegalArgumentException(
-                    campo + " permite máximo " + limite + " caracteres."
+                    "El campo " + campo
+                            + " permite máximo "
+                            + limite
+                            + " caracteres."
             );
         }
 
         return textoLimpio;
+    }
+
+    // Eliminar un laboratorio por su ID
+    public boolean eliminar(int id) throws SQLException {
+        if (id <= 0) {
+            throw new IllegalArgumentException(
+                    "El ID del laboratorio no es válido."
+            );
+        }
+
+        return repository.eliminar(id);
     }
 }
