@@ -263,14 +263,79 @@ public class MenuPrincipalView extends JFrame {
                 new EquipoView().setVisible(true);
             });
         } else if (texto.equals("Devoluciones y Mantenimiento")) {
-            boton.addActionListener(e -> {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "El módulo de Devoluciones y Mantenimiento está pendiente de integración.",
-                        "Módulo pendiente",
-                        JOptionPane.INFORMATION_MESSAGE
-                );
-            });
+                boton.addActionListener(e -> {
+                    JDialog ventana = new JDialog(
+                            this,
+                            "SIGELAB - Devoluciones y Mantenimiento",
+                            true
+                    );
+
+                    ventana.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+                    ventana.setSize(430, 300);
+                    ventana.setLocationRelativeTo(this);
+
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+                    panel.setBorder(
+                            BorderFactory.createEmptyBorder(25, 30, 25, 30)
+                    );
+
+                    JLabel titulo = new JLabel(
+                            "DEVOLUCIONES Y MANTENIMIENTO",
+                            SwingConstants.CENTER
+                    );
+                    titulo.setFont(new Font("Arial", Font.BOLD, 18));
+                    titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                    JButton btnDevoluciones = crearBoton(
+                            "Gestión de Devoluciones",
+                            new Color(39, 174, 96)
+                    );
+
+                    JButton btnMantenimiento = crearBoton(
+                            "Gestión de Mantenimiento",
+                            new Color(230, 126, 34)
+                    );
+
+                    btnDevoluciones.setMaximumSize(
+                            new Dimension(Integer.MAX_VALUE, 60)
+                    );
+                    btnMantenimiento.setMaximumSize(
+                            new Dimension(Integer.MAX_VALUE, 60)
+                    );
+
+                    btnDevoluciones.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    btnMantenimiento.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                    btnDevoluciones.addActionListener(evento -> {
+                        JOptionPane.showMessageDialog(
+                                ventana,
+                                "El módulo de Devoluciones se agregará a continuación.",
+                                "Devoluciones",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    });
+
+                    btnMantenimiento.addActionListener(evento -> {
+                        JOptionPane.showMessageDialog(
+                                ventana,
+                                "El módulo de Mantenimiento se agregará a continuación.",
+                                "Mantenimiento",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    });
+
+                    panel.add(titulo);
+                    panel.add(Box.createRigidArea(new Dimension(0, 25)));
+                    panel.add(btnDevoluciones);
+                    panel.add(Box.createRigidArea(new Dimension(0, 12)));
+                    panel.add(btnMantenimiento);
+
+                    ventana.add(panel);
+                    ventana.setVisible(true);
+                });
+
+
 
         } else if (texto.equals("Equipos y Laboratorios")) {
             boton.addActionListener(e -> {
