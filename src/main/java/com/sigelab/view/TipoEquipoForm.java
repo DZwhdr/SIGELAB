@@ -1,5 +1,4 @@
-
-package org.example.view;
+package com.sigelab.view;
 
 import com.sigelab.controller.TipoEquipoController;
 import com.sigelab.model.TipoEquipo;
