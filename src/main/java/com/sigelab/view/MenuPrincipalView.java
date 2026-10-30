@@ -1,460 +1,377 @@
 package com.sigelab.view;
 
 import com.sigelab.model.Usuario;
-import org.example.view.TipoEquipoForm;
-import com.sigelab.view.GenerarEquipoQRForm;
-import com.sigelab.view.ConsultaEquipoQRForm;
+import com.sigelab.repository.DashboardDAO;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class MenuPrincipalView extends JFrame {
 
     private final Usuario usuarioLogueado;
+    private boolean modoOscuro;
 
-    public MenuPrincipalView(Usuario usuario) {
+    private JPanel centerWrapper;
+    private JPanel pnlContenido;
+    private JPanel headerPanel;
+    private JPanel pnlStats;
+    private JLabel lblTitulo;
+    private JLabel lblUserInfo;
+    private JLabel lblAvatarHeader;
+
+    // Labels para las métricas (para poder actualizarlas)
+    private JLabel lblTotalEquipos;
+    private JLabel lblDisponibles;
+    private JLabel lblPrestados;
+    private JLabel lblDanadosMantenimiento;
+
+    public MenuPrincipalView(Usuario usuario, boolean modoOscuro) {
         this.usuarioLogueado = usuario;
+        this.modoOscuro = modoOscuro;
 
         setTitle("SIGELAB - Sistema de Gestión de Laboratorios Universitarios");
-        setSize(900, 750);
+        setSize(900, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setResizable(false);
+        setResizable(true);
 
-        JPanel panel = new JPanel(null);
-        panel.setBackground(new Color(245, 247, 250));
+        setLayout(new BorderLayout());
 
-        // ENCABEZADO
-        JPanel headerPanel = new JPanel(null);
-        headerPanel.setBounds(0, 0, 900, 75);
-        headerPanel.setBackground(new Color(30, 60, 114));
+        // Encabezado principal del dashboard
+        headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
 
-        JLabel lblTitulo = new JLabel("SIGELAB - Dashboard Principal");
+        lblTitulo = new JLabel("SIGELAB - Dashboard Principal");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setBounds(25, 20, 430, 35);
-        headerPanel.add(lblTitulo);
+        headerPanel.add(lblTitulo, BorderLayout.WEST);
+
+        JPanel pnlUserHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlUserHeader.setOpaque(false);
 
         String nombreRol = usuario.getRol() != null
                 ? usuario.getRol().getNombre()
                 : "SIN ROL";
 
-        JLabel lblUserInfo = new JLabel(
-                "Usuario: " + usuario.getNombre() + " "
-                        + usuario.getApellido() + " [" + nombreRol + "]"
+        lblUserInfo = new JLabel(
+                "<html><div style='text-align: right;'>Usuario: <b>" + usuario.getNombre() + " "
+                        + usuario.getApellido() + "</b> [" + nombreRol + "]</div></html>"
         );
         lblUserInfo.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblUserInfo.setForeground(new Color(200, 220, 255));
-        lblUserInfo.setBounds(490, 25, 390, 20);
-        headerPanel.add(lblUserInfo);
+        pnlUserHeader.add(lblUserInfo);
 
-        panel.add(headerPanel);
+        // Avatar en el header para mostrar la foto única del usuario
+        lblAvatarHeader = new JLabel();
+        lblAvatarHeader.setPreferredSize(new Dimension(40, 40));
+        cargarFotoAvatarHeader();
+        pnlUserHeader.add(lblAvatarHeader);
 
-        // RESUMEN DE INVENTARIO
-        JPanel pnlStats = new JPanel(new GridLayout(1, 4, 10, 10));
-        pnlStats.setBounds(25, 90, 835, 80);
-        pnlStats.setBackground(Color.WHITE);
-        pnlStats.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(180, 190, 200)),
-                " Resumen de Inventario ",
-                0,
-                0,
-                new Font("Arial", Font.BOLD, 12),
-                new Color(30, 60, 114)
+        headerPanel.add(pnlUserHeader, BorderLayout.EAST);
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Contenedor central y tarjetas de métricas
+        centerWrapper = new JPanel(new GridBagLayout());
+
+        pnlContenido = new JPanel();
+        pnlContenido.setLayout(new BoxLayout(pnlContenido, BoxLayout.Y_AXIS));
+
+        pnlStats = new JPanel(new GridLayout(1, 4, 10, 10));
+        pnlStats.setPreferredSize(new Dimension(835, 80));
+        pnlStats.setMaximumSize(new Dimension(835, 80));
+
+        // Inicializamos los labels vacíos para actualizarlos luego
+        lblTotalEquipos = new JLabel("--", SwingConstants.CENTER);
+        lblDisponibles = new JLabel("--", SwingConstants.CENTER);
+        lblPrestados = new JLabel("--", SwingConstants.CENTER);
+        lblDanadosMantenimiento = new JLabel("--", SwingConstants.CENTER);
+
+        pnlStats.add(crearMetrica("Total Equipos", lblTotalEquipos, "#1e3c72"));
+        pnlStats.add(crearMetrica("Disponibles", lblDisponibles, "#27ae60"));
+        pnlStats.add(crearMetrica("Prestados", lblPrestados, "#2980b9"));
+        pnlStats.add(crearMetrica("Dañados / Mant.", lblDanadosMantenimiento, "#c0392b"));
+
+        // Cargar los datos reales de la BD
+        cargarMetricasDesdeBD();
+
+        pnlContenido.add(pnlStats);
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Préstamos y Código QR", new Color(41, 128, 185)),
+                crearBoton("Devoluciones y Mantenimiento", new Color(39, 174, 96))
         ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        pnlStats.add(crearMetrica("Total Equipos", "#1e3c72"));
-        pnlStats.add(crearMetrica("Disponibles", "#27ae60"));
-        pnlStats.add(crearMetrica("Prestados", "#2980b9"));
-        pnlStats.add(crearMetrica("Dañados / Mant.", "#c0392b"));
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Equipos y Laboratorios", new Color(142, 68, 173)),
+                crearBoton("Reportes y Auditoría", new Color(230, 126, 34))
+        ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        panel.add(pnlStats);
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Gestión de Usuarios (ADMIN)", new Color(52, 73, 94)),
+                crearBoton("Configuración del Sistema", new Color(44, 62, 80))
+        ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 20)));
 
-        // MÓDULOS EXISTENTES
-        JButton btnPrestamos = crearBoton(
-                "Préstamos y Código QR",
-                40, 195, 390, 65,
-                new Color(41, 128, 185)
-        );
+        JButton btnLogout = crearBoton("Cerrar Sesión", new Color(192, 57, 43));
+        btnLogout.setPreferredSize(new Dimension(250, 45));
+        btnLogout.setMaximumSize(new Dimension(250, 45));
 
-        JButton btnDevoluciones = crearBoton(
-                "Devoluciones y Mantenimiento",
-                460, 195, 390, 65,
-                new Color(39, 174, 96)
-        );
+        JPanel pnlLogout = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlLogout.add(btnLogout);
+        pnlContenido.add(pnlLogout);
 
-        JButton btnEquipos = crearBoton(
-                "Equipos y Laboratorios",
-                40, 275, 390, 65,
-                new Color(142, 68, 173)
-        );
+        centerWrapper.add(pnlContenido);
+        add(centerWrapper, BorderLayout.CENTER);
 
-        JButton btnReportes = crearBoton(
-                "Reportes y Auditoría",
-                460, 275, 390, 65,
-                new Color(230, 126, 34)
-        );
-
-        panel.add(btnPrestamos);
-        panel.add(btnDevoluciones);
-        panel.add(btnEquipos);
-        panel.add(btnReportes);
-
-        // TUS MÓDULOS
-        JLabel lblMisModulos = new JLabel(
-                "Gestión de Tipos de Equipo y Códigos QR"
-        );
-        lblMisModulos.setFont(new Font("Arial", Font.BOLD, 15));
-        lblMisModulos.setForeground(new Color(30, 60, 114));
-        lblMisModulos.setBounds(40, 355, 500, 25);
-        panel.add(lblMisModulos);
-
-        JButton btnTipos = crearBoton(
-                "Tipos de Equipo",
-                40, 390, 260, 60,
-                new Color(52, 93, 140)
-        );
-
-        JButton btnGenerarQR = crearBoton(
-                "Generar QR",
-                315, 390, 260, 60,
-                new Color(38, 125, 110)
-        );
-
-        JButton btnEscanearQR = crearBoton(
-                "Escanear QR",
-                590, 390, 260, 60,
-                new Color(83, 98, 160)
-        );
-
-        panel.add(btnTipos);
-        panel.add(btnGenerarQR);
-        panel.add(btnEscanearQR);
-
-        // ADMINISTRACIÓN Y CONFIGURACIÓN
-        JButton btnUsuarios = crearBoton(
-                "Gestión de Usuarios (ADMIN)",
-                40, 480, 390, 55,
-                new Color(52, 73, 94)
-        );
-
-        JButton btnConfiguracion = crearBoton(
-                "Configuración del Sistema",
-                460, 480, 390, 55,
-                new Color(44, 62, 80)
-        );
-
-        panel.add(btnUsuarios);
-        panel.add(btnConfiguracion);
-
-        // CERRAR SESIÓN
-        JButton btnLogout = crearBoton(
-                "Cerrar Sesión",
-                345, 580, 200, 45,
-                new Color(192, 57, 43)
-        );
-        panel.add(btnLogout);
-
-        // EVENTOS DE TUS MÓDULOS
-        btnTipos.addActionListener(e ->
-                new TipoEquipoForm().setVisible(true)
-        );
-
-        btnGenerarQR.addActionListener(e ->
-                new GenerarEquipoQRForm().setVisible(true)
-        );
-
-        btnEscanearQR.addActionListener(e ->
-                new ConsultaEquipoQRForm().setVisible(true)
-        );
-
-        // EVENTOS EXISTENTES
-        boolean esAdmin =
-                "ADMIN".equalsIgnoreCase(nombreRol)
-                        || "ADMINISTRADOR".equalsIgnoreCase(nombreRol);
-
-        btnUsuarios.addActionListener(e -> {
-            if (esAdmin) {
-                new UsuarioManagementView().setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Esta función requiere privilegios de administrador.",
-                        "Permisos insuficientes",
-                        JOptionPane.WARNING_MESSAGE
-                );
-            }
-        });
-
-        btnConfiguracion.addActionListener(e ->
-                new ConfiguracionView(usuarioLogueado).setVisible(true)
-        );
-
-        // Se conservan los eventos temporales de tus compañeros.
-        btnPrestamos.addActionListener(e ->
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Abriendo Módulo de Préstamos y QR..."
-                )
-        );
-
-        btnDevoluciones.addActionListener(e ->
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Abriendo Módulo de Devoluciones y Mantenimiento..."
-                )
-        );
-
-        btnEquipos.addActionListener(e ->
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Abriendo Catálogo de Equipos y Laboratorios..."
-                )
-        );
-
-        btnReportes.addActionListener(e ->
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Abriendo Reportes y Auditoría..."
-                )
-        );
-
-        btnLogout.addActionListener(e -> {
-            int confirmar = JOptionPane.showConfirmDialog(
-                    this,
-                    "¿Desea cerrar la sesión actual?",
-                    "Cerrar Sesión",
-                    JOptionPane.YES_NO_OPTION
-            );
-
-            if (confirmar == JOptionPane.YES_OPTION) {
-                dispose();
-                new LoginView().setVisible(true);
-            }
-        });
-
-        setContentPane(panel);
+        aplicarTemaGlobal();
     }
 
-    private JButton crearBoton(
-            String texto,
-            int x,
-            int y,
-            int ancho,
-            int alto,
-            Color color
-    ) {
+    // Método que consulta el DashboardDAO y actualiza los números en pantalla
+    private void cargarMetricasDesdeBD() {
+        DashboardDAO dao = new DashboardDAO();
+
+        int total = dao.obtenerTotalEquipos();
+        int disponibles = dao.obtenerCantidadEquiposPorEstado("Disponible");
+        int prestados = dao.obtenerCantidadEquiposPorEstado("Prestado");
+        int danados = dao.obtenerCantidadEquiposPorEstado("Dañado");
+        int enMantenimiento = dao.obtenerCantidadEquiposPorEstado("Mantenimiento");
+
+        lblTotalEquipos.setText(String.valueOf(total));
+        lblDisponibles.setText(String.valueOf(disponibles));
+        lblPrestados.setText(String.valueOf(prestados));
+        lblDanadosMantenimiento.setText(String.valueOf(danados + enMantenimiento));
+    }
+
+    // Cargo la foto usando el ID único del usuario logueado para que no falle con ningún nombre
+    private void cargarFotoAvatarHeader() {
+        int idUser = (usuarioLogueado != null) ? usuarioLogueado.getIdUsuario() : 0;
+        File archivoFoto = new File("uploads/perfiles/usuario_" + idUser + ".jpg");
+
+        if (archivoFoto.exists()) {
+            try {
+                BufferedImage imgOriginal = ImageIO.read(archivoFoto);
+                if (imgOriginal != null) {
+                    Image imgEscalada = imgOriginal.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                    lblAvatarHeader.setText("");
+                    lblAvatarHeader.setIcon(new ImageIcon(imgEscalada));
+                    return;
+                }
+            } catch (IOException e) {
+                // Si falla se queda con el icono por defecto
+            }
+        }
+        lblAvatarHeader.setText("👤");
+        lblAvatarHeader.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+        lblAvatarHeader.setForeground(Color.WHITE);
+    }
+
+    // Método para refrescar la foto del avatar en el menú al cerrar la configuración
+    public void refrescarAvatar() {
+        cargarFotoAvatarHeader();
+    }
+
+    // Cambiar colores dinámicamente según el modo oscuro o claro
+    private void aplicarTemaGlobal() {
+        if (modoOscuro) {
+            Color fondoOscuro = new Color(20, 24, 33);
+            Color headerOscuro = new Color(30, 36, 48);
+            Color tarjetaOscura = new Color(30, 36, 48);
+
+            centerWrapper.setBackground(fondoOscuro);
+            pnlContenido.setBackground(fondoOscuro);
+            headerPanel.setBackground(headerOscuro);
+
+            lblTitulo.setForeground(new Color(220, 230, 242));
+            lblUserInfo.setForeground(new Color(255, 215, 0));
+
+            pnlStats.setBackground(tarjetaOscura);
+            pnlStats.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(60, 75, 95)),
+                    " Resumen de Inventario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(100, 180, 255)
+            ));
+
+            // Color de los números en modo oscuro
+            lblTotalEquipos.setForeground(new Color(100, 180, 255));
+            lblDisponibles.setForeground(new Color(46, 204, 113));
+            lblPrestados.setForeground(new Color(52, 152, 219));
+            lblDanadosMantenimiento.setForeground(new Color(231, 76, 60));
+
+            Component[] comps = pnlContenido.getComponents();
+            for (Component comp : comps) {
+                if (comp instanceof JPanel) {
+                    comp.setBackground(fondoOscuro);
+                }
+            }
+        } else {
+            Color fondoClaro = new Color(245, 247, 250);
+            Color headerClaro = new Color(30, 60, 114);
+
+            centerWrapper.setBackground(fondoClaro);
+            pnlContenido.setBackground(fondoClaro);
+            headerPanel.setBackground(headerClaro);
+
+            lblTitulo.setForeground(Color.WHITE);
+            lblUserInfo.setForeground(new Color(200, 220, 255));
+
+            pnlStats.setBackground(Color.WHITE);
+            pnlStats.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(180, 190, 200)),
+                    " Resumen de Inventario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(30, 60, 114)
+            ));
+
+            // Color de los números en modo claro
+            lblTotalEquipos.setForeground(new Color(30, 60, 114));
+            lblDisponibles.setForeground(new Color(39, 174, 96));
+            lblPrestados.setForeground(new Color(41, 128, 185));
+            lblDanadosMantenimiento.setForeground(new Color(192, 57, 43));
+
+            Component[] comps = pnlContenido.getComponents();
+            for (Component comp : comps) {
+                if (comp instanceof JPanel) {
+                    comp.setBackground(fondoClaro);
+                }
+            }
+        }
+        repaint();
+    }
+
+    private JPanel crearFilaBotones(JButton btn1, JButton btn2) {
+        JPanel fila = new JPanel(new GridLayout(1, 2, 15, 0));
+        fila.setPreferredSize(new Dimension(835, 55));
+        fila.setMaximumSize(new Dimension(835, 55));
+        fila.add(btn1);
+        fila.add(btn2);
+        return fila;
+    }
+
+    // Manejo de acciones de los botones principales y permisos de admin
+    private JButton crearBoton(String texto, Color color) {
         JButton boton = new JButton(texto);
-        boton.setBounds(x, y, ancho, alto);
         boton.setBackground(color);
         boton.setForeground(Color.WHITE);
         boton.setFont(new Font("Arial", Font.BOLD, 14));
         boton.setFocusPainted(false);
-        boton.setCursor(
-                Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        boolean esAdmin = "ADMIN".equalsIgnoreCase(
+                usuarioLogueado.getRol() != null ? usuarioLogueado.getRol().getNombre() : ""
+        ) || "ADMINISTRADOR".equalsIgnoreCase(
+                usuarioLogueado.getRol() != null ? usuarioLogueado.getRol().getNombre() : ""
         );
+
+        if (texto.equals("Gestión de Usuarios (ADMIN)")) {
+            boton.addActionListener(e -> {
+                if (esAdmin) {
+                    new UsuarioManagementView(modoOscuro).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Esta función requiere privilegios de administrador.",
+                            "Permisos insuficientes",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                }
+            });
+        } else if (texto.equals("Configuración del Sistema")) {
+            boton.addActionListener(e -> {
+                ConfiguracionView configView = new ConfiguracionView(
+                        this,
+                        usuarioLogueado,
+                        modoOscuro,
+                        (nuevoModo) -> {
+                            this.modoOscuro = nuevoModo;
+                            aplicarTemaGlobal();
+                        }
+                );
+                configView.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                        refrescarAvatar();
+                    }
+                });
+                configView.setVisible(true);
+            });
+        } else if (texto.equals("Préstamos y Código QR")) {
+            boton.addActionListener(e -> {
+                // Cambia esto por tu vista de préstamos si la tienes
+                new EquipoView().setVisible(true);
+            });
+        } else if (texto.equals("Devoluciones y Mantenimiento")) {
+            boton.addActionListener(e -> {
+                // Cambia esto por tu vista de devoluciones si la tienes
+                JFrame ventanaLab = new JFrame("SIGELAB - Gestión de Laboratorios");
+                ventanaLab.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                ventanaLab.setSize(1000, 650);
+                ventanaLab.setLocationRelativeTo(this);
+                ventanaLab.add(new LaboratorioView());
+                ventanaLab.setVisible(true);
+            });
+        } else if (texto.equals("Equipos y Laboratorios")) {
+            boton.addActionListener(e -> {
+                new EquipoView().setVisible(true);
+            });
+        } else if (texto.equals("Reportes y Auditoría")) {
+            // AQUÍ ABRIMOS LA VISTA DE REPORTES/AUDITORÍA
+            boton.addActionListener(e -> {
+                // Puedes abrir ambas o combinarlas. Aquí abrimos Auditoria y Reportes.
+                new AuditoriaView().setVisible(true);
+                new ReportesView().setVisible(true);
+            });
+        } else if (texto.equals("Cerrar Sesión")) {
+            boton.addActionListener(e -> {
+                int confirmar = JOptionPane.showConfirmDialog(
+                        this,
+                        "¿Desea cerrar la sesión actual?",
+                        "Cerrar Sesión",
+                        JOptionPane.YES_NO_OPTION
+                );
+                if (confirmar == JOptionPane.YES_OPTION) {
+                    // Registrar auditoría de logout
+                    com.sigelab.repository.AuditoriaService.registrar(
+                            usuarioLogueado.getIdUsuario(),
+                            "LOGOUT",
+                            "usuario",
+                            usuarioLogueado.getIdUsuario(),
+                            "El usuario cerró sesión."
+                    );
+                    dispose();
+                    new LoginView().setVisible(true);
+                }
+            });
+        }
+
         return boton;
     }
 
-    private JLabel crearMetrica(String titulo, String color) {
-        return new JLabel(
-                "<html><center><b>" + titulo + "</b>"
-                        + "<br><font color='" + color
-                        + "' size='5'>--</font></center></html>",
-                SwingConstants.CENTER
-        );
-    }
-}
-package com.sigelab.view;
-
-import com.sigelab.model.Usuario;
-
-import javax.swing.*;
-import java.awt.*;
-
-// La clase MenuPrincipalView extiende de JFrame para construir la ventana del Dashboard principal
-public class MenuPrincipalView extends JFrame {
-
-    // Variable para almacenar los datos del usuario que acaba de iniciar sesión exitosamente
-    private Usuario usuarioLogueado;
-
-    // Constructor que recibe al usuario autenticado para personalizar la interfaz según su rol
-    public MenuPrincipalView(Usuario usuario) {
-        this.usuarioLogueado = usuario;
-
-        // 1. Configuración básica de la ventana principal
-        setTitle("SIGELAB - Sistema de Gestión de Laboratorios Universitarios");
-        setSize(850, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Centra la ventana en la pantalla del usuario
-        setResizable(false); // Evita que se pueda redimensionar la ventana
-
-        // Panel principal que contendrá todos los componentes visuales
+    // Método modificado para recibir el JLabel con el número y poder actualizarlo dinámicamente
+    private JPanel crearMetrica(String titulo, JLabel valorLabel, String color) {
         JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(new Color(245, 247, 250)); // Fondo gris claro con estilo moderno
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false); // Para que tome el color del pnlStats
 
-        // -------------------------------------------------------------------------
-        // 2. ENCABEZADO SUPERIOR (Barra azul institucional)
-        // -------------------------------------------------------------------------
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 850, 70);
-        headerPanel.setBackground(new Color(30, 60, 114)); // Azul corporativo
-        headerPanel.setLayout(null);
+        JLabel lblTituloMetrica = new JLabel(titulo);
+        lblTituloMetrica.setFont(new Font("Arial", Font.BOLD, 12));
+        lblTituloMetrica.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Título principal ubicado en el encabezado
-        JLabel lblTitulo = new JLabel("SIGELAB - Dashboard Principal");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setBounds(25, 20, 400, 30);
-        headerPanel.add(lblTitulo);
+        valorLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        valorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // Extracción del rol del usuario usando getNombre() para mostrarlo y validar permisos
-        String nombreRol = (usuario != null && usuario.getRol() != null) ? usuario.getRol().getNombre() : "ADMIN";
+        panel.add(Box.createVerticalGlue());
+        panel.add(lblTituloMetrica);
+        panel.add(valorLabel);
+        panel.add(Box.createVerticalGlue());
 
-        // Etiqueta informativa con el nombre completo y el rol actual en sesión
-        String nombreUser = (usuario != null && usuario.getNombre() != null) ? usuario.getNombre() : "Administrador";
-        String apellidoUser = (usuario != null && usuario.getApellido() != null) ? usuario.getApellido() : "";
-
-        JLabel lblUserInfo = new JLabel("Usuario: " + nombreUser + " " + apellidoUser + " [" + nombreRol + "]");
-        lblUserInfo.setFont(new Font("Arial", Font.PLAIN, 12));
-        lblUserInfo.setForeground(new Color(200, 220, 255));
-        lblUserInfo.setBounds(480, 25, 350, 20);
-        headerPanel.add(lblUserInfo);
-
-        panel.add(headerPanel);
-
-        // -------------------------------------------------------------------------
-        // 3. PANEL DE MÉTRICAS (Dashboard)
-        // -------------------------------------------------------------------------
-        JPanel pnlStats = new JPanel();
-        pnlStats.setBounds(25, 85, 785, 75);
-        pnlStats.setBackground(Color.WHITE);
-
-        // Borde decorativo con título para simular el resumen de inventario en tiempo real
-        pnlStats.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(180, 190, 200)),
-                " Resumen de Inventario en Tiempo Real (Dashboard) ",
-                0, 0, new Font("Arial", Font.BOLD, 12), new Color(30, 60, 114)
-        ));
-        pnlStats.setLayout(new GridLayout(1, 4, 10, 10)); // Estructura de 1 fila x 4 columnas
-
-        // Etiquetas indicadoras de cantidades
-        JLabel lblTotal = new JLabel("<html><center><b>Total Equipos</b><br><font color='#1e3c72' size='5'>--</font></center></html>", SwingConstants.CENTER);
-        JLabel lblDisponibles = new JLabel("<html><center><b>Disponibles</b><br><font color='#27ae60' size='5'>--</font></center></html>", SwingConstants.CENTER);
-        JLabel lblPrestados = new JLabel("<html><center><b>Prestados</b><br><font color='#2980b9' size='5'>--</font></center></html>", SwingConstants.CENTER);
-        JLabel lblDanadosMaint = new JLabel("<html><center><b>Dañados / Mant.</b><br><font color='#c0392b' size='5'>--</font></center></html>", SwingConstants.CENTER);
-
-        // Se agregan las métricas al panel superior de estadísticas
-        pnlStats.add(lblTotal);
-        pnlStats.add(lblDisponibles);
-        pnlStats.add(lblPrestados);
-        pnlStats.add(lblDanadosMaint);
-
-        panel.add(pnlStats);
-
-        // -------------------------------------------------------------------------
-        // 4. BOTONES DE ACCESO A MÓDULOS (Operación diaria del sistema)
-        // -------------------------------------------------------------------------
-
-        // Botón 1: Módulo de Préstamos y Código QR
-        JButton btnPrestamos = new JButton("📋 Préstamos y Código QR");
-        btnPrestamos.setBounds(50, 185, 330, 75);
-        btnPrestamos.setBackground(new Color(41, 128, 185)); // Azul claro
-        btnPrestamos.setForeground(Color.WHITE);
-        btnPrestamos.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(btnPrestamos);
-
-        // Botón 2: Módulo de Devoluciones y Mantenimiento
-        JButton btnDevoluciones = new JButton("🔄 Devoluciones y Mantenimiento");
-        btnDevoluciones.setBounds(450, 185, 330, 75);
-        btnDevoluciones.setBackground(new Color(39, 174, 96)); // Verde
-        btnDevoluciones.setForeground(Color.WHITE);
-        btnDevoluciones.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(btnDevoluciones);
-
-        // Botón 3: Catálogo de Equipos y Laboratorios
-        JButton btnEquipos = new JButton("💻 Equipos y Laboratorios");
-        btnEquipos.setBounds(50, 285, 330, 75);
-        btnEquipos.setBackground(new Color(142, 68, 173)); // Morado
-        btnEquipos.setForeground(Color.WHITE);
-        btnEquipos.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(btnEquipos);
-
-        // Botón 4: Reportes y Auditoría del Sistema
-        JButton btnReportes = new JButton("📊 Reportes y Auditoría");
-        btnReportes.setBounds(450, 285, 330, 75);
-        btnReportes.setBackground(new Color(230, 126, 34)); // Naranja
-        btnReportes.setForeground(Color.WHITE);
-        btnReportes.setFont(new Font("Arial", Font.BOLD, 14));
-        panel.add(btnReportes);
-
-        // Botón 5: Gestión de Usuarios (CRUD exclusivo para el Administrador)
-        JButton btnUsuarios = new JButton("👥 Gestión de Usuarios (ADMIN)");
-        btnUsuarios.setBounds(50, 385, 350, 50);
-        btnUsuarios.setBackground(new Color(52, 73, 94)); // Gris oscuro / Azul pizarra
-        btnUsuarios.setForeground(Color.WHITE);
-        btnUsuarios.setFont(new Font("Arial", Font.BOLD, 13));
-        panel.add(btnUsuarios);
-
-        // Botón 6: Configuración del Sistema
-        JButton btnConfiguracion = new JButton("⚙️ Configuración del Sistema");
-        btnConfiguracion.setBounds(430, 385, 350, 50);
-        btnConfiguracion.setBackground(new Color(44, 62, 80)); // Gris azulado oscuro
-        btnConfiguracion.setForeground(Color.WHITE);
-        btnConfiguracion.setFont(new Font("Arial", Font.BOLD, 13));
-        panel.add(btnConfiguracion);
-
-        // -------------------------------------------------------------------------
-        // 5. BOTÓN DE CIERRE DE SESIÓN (LOGOUT)
-        // -------------------------------------------------------------------------
-        JButton btnLogout = new JButton("🚪 Cerrar Sesión");
-        btnLogout.setBounds(335, 455, 180, 40);
-        btnLogout.setBackground(new Color(192, 57, 43)); // Rojo alerta
-        btnLogout.setForeground(Color.WHITE);
-        btnLogout.setFont(new Font("Arial", Font.BOLD, 13));
-        panel.add(btnLogout);
-
-        // -------------------------------------------------------------------------
-        // 6. ACCIONES Y VALIDACIONES DE SEGURIDAD (Eventos y control de roles)
-        // -------------------------------------------------------------------------
-
-        boolean esAdmin = "ADMIN".equalsIgnoreCase(nombreRol) || "ADMINISTRADOR".equalsIgnoreCase(nombreRol);
-
-        // Evento del botón de Gestión de Usuarios para abrir el registro/configuración biométrica
-        btnUsuarios.addActionListener(e -> {
-            if (esAdmin) {
-                UsuarioManagementView vistaUsuarios = new UsuarioManagementView();
-                vistaUsuarios.setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "Acceso Denegado: Esta función requiere privilegios exclusivos de ADMINISTRADOR.",
-                        "Permisos Insuficientes", JOptionPane.WARNING_MESSAGE);
-            }
-        });
-
-        // Evento del botón de Configuración
-        btnConfiguracion.addActionListener(e -> {
-            ConfiguracionView vistaConfig = new ConfiguracionView(usuarioLogueado);
-            vistaConfig.setVisible(true);
-        });
-
-        // Eventos informativos para los demás módulos operativos
-        btnPrestamos.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Módulo de Préstamos y QR..."));
-        btnDevoluciones.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Módulo de Devoluciones y Mantenimiento..."));
-        btnEquipos.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Catálogo de Equipos y Laboratorios..."));
-        btnReportes.addActionListener(e -> JOptionPane.showMessageDialog(this, "Abriendo Reportes y Auditoría..."));
-
-        // Evento del botón Cerrar Sesión
-        btnLogout.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "¿Desea cerrar la sesión actual?", "Cerrar Sesión", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                dispose();
-                new LoginView().setVisible(true);
-            }
-        });
-
-        add(panel);
+        return panel;
     }
 }

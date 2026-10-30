@@ -5,665 +5,470 @@ import com.sigelab.model.Rol;
 import com.sigelab.model.Usuario;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
 public class UsuarioManagementView extends JFrame {
 
-    private JTable tblUsuarios;
-    private DefaultTableModel modelTabla;
-    private JTextField txtUsername, txtNombre, txtApellido, txtCorreo;
-    private JPasswordField txtPassword;
-    private JComboBox<String> cbRol;
-    private JCheckBox chkActivo;
-    private JButton btnCrear, btnModificar, btnLimpiar, btnCambiarEstado;
-
     private UsuarioController usuarioController;
-    private int idUsuarioSeleccionado = -1; // -1 indica que no hay selección (modo creación)
+    private JTable tablaUsuarios;
+    private DefaultTableModel modeloTabla;
 
-    public UsuarioManagementView() {
+    private JTextField txtUsername;
+    private JPasswordField txtPassword;
+    private JTextField txtNombre;
+    private JTextField txtApellido;
+    private JTextField txtCorreo;
+    private JComboBox<String> cmbRol;
+    private JCheckBox chkActivo;
+
+    private boolean modoOscuro;
+    private JPanel mainPanel;
+    private JPanel headerPanel;
+    private JPanel pnlCentro;
+    private JPanel pnlForm;
+    private JPanel pnlFooter;
+    private JScrollPane scrollTabla;
+    private JLabel lblTitulo;
+    private JLabel lblSub;
+    private JLabel[] etiquetasForm;
+
+    public UsuarioManagementView(boolean modoOscuro) {
         this.usuarioController = new UsuarioController();
+        this.modoOscuro = modoOscuro;
 
-        setTitle("SIGELAB - Gestión de Usuarios (CRUD)");
-        setSize(850, 560);
+        setTitle("SIGELAB - Módulo de Gestión de Usuarios y Accesos");
+        setSize(920, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(new Color(245, 247, 250));
+        initComponents();
+        cargarUsuariosEnTabla();
+        aplicarTemaVisual();
+    }
 
-        // Encabezado
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 850, 50);
-        headerPanel.setBackground(new Color(52, 73, 94));
-        headerPanel.setLayout(null);
+    private void initComponents() {
+        mainPanel = new JPanel(new BorderLayout());
 
-        JLabel lblTitulo = new JLabel("Módulo de Gestión de Usuarios");
+        // Encabezado superior con estilo ejecutivo
+        headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+
+        lblTitulo = new JLabel("Módulo de Administración de Usuarios");
         lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setBounds(20, 10, 350, 30);
-        headerPanel.add(lblTitulo);
-        panel.add(headerPanel);
+        headerPanel.add(lblTitulo, BorderLayout.WEST);
 
-        // Formulario (Izquierda)
+        lblSub = new JLabel("Control de accesos, roles y seguridad corporativa");
+        lblSub.setFont(new Font("Arial", Font.PLAIN, 12));
+        headerPanel.add(lblSub, BorderLayout.EAST);
+
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+
+        // Panel central dividido entre el formulario y la tabla de registros
+        pnlCentro = new JPanel(new BorderLayout(15, 0));
+        pnlCentro.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        // Formulario a la izquierda para capturar los datos
+        pnlForm = new JPanel(null);
+        pnlForm.setPreferredSize(new Dimension(380, 0));
+
+        int xLbl = 15, xTxt = 105, wLbl = 85, wTxt = 250, hElem = 32, yInicio = 25, espacio = 40;
+
         JLabel lblUser = new JLabel("Usuario:");
-        lblUser.setBounds(20, 70, 80, 20);
-        panel.add(lblUser);
-
+        lblUser.setFont(new Font("Arial", Font.BOLD, 11));
+        lblUser.setBounds(xLbl, yInicio, wLbl, hElem);
+        pnlForm.add(lblUser);
         txtUsername = new JTextField();
-        txtUsername.setBounds(100, 70, 180, 25);
-        panel.add(txtUsername);
+        txtUsername.setBounds(xTxt, yInicio, wTxt, hElem);
+        pnlForm.add(txtUsername);
 
         JLabel lblPass = new JLabel("Contraseña:");
-        lblPass.setBounds(20, 105, 80, 20);
-        panel.add(lblPass);
-
+        lblPass.setFont(new Font("Arial", Font.BOLD, 11));
+        lblPass.setBounds(xLbl, yInicio + espacio, wLbl, hElem);
+        pnlForm.add(lblPass);
         txtPassword = new JPasswordField();
-        txtPassword.setBounds(100, 105, 180, 25);
-        panel.add(txtPassword);
+        txtPassword.setBounds(xTxt, yInicio + espacio, wTxt, hElem);
+        pnlForm.add(txtPassword);
 
         JLabel lblNom = new JLabel("Nombre:");
-        lblNom.setBounds(20, 140, 80, 20);
-        panel.add(lblNom);
-
+        lblNom.setFont(new Font("Arial", Font.BOLD, 11));
+        lblNom.setBounds(xLbl, yInicio + (espacio * 2), wLbl, hElem);
+        pnlForm.add(lblNom);
         txtNombre = new JTextField();
-        txtNombre.setBounds(100, 140, 180, 25);
-        panel.add(txtNombre);
+        txtNombre.setBounds(xTxt, yInicio + (espacio * 2), wTxt, hElem);
+        pnlForm.add(txtNombre);
 
         JLabel lblApe = new JLabel("Apellido:");
-        lblApe.setBounds(20, 175, 80, 20);
-        panel.add(lblApe);
-
+        lblApe.setFont(new Font("Arial", Font.BOLD, 11));
+        lblApe.setBounds(xLbl, yInicio + (espacio * 3), wLbl, hElem);
+        pnlForm.add(lblApe);
         txtApellido = new JTextField();
-        txtApellido.setBounds(100, 175, 180, 25);
-        panel.add(txtApellido);
+        txtApellido.setBounds(xTxt, yInicio + (espacio * 3), wTxt, hElem);
+        pnlForm.add(txtApellido);
 
-        JLabel lblMail = new JLabel("Correo:");
-        lblMail.setBounds(20, 210, 80, 20);
-        panel.add(lblMail);
-
+        JLabel lblCorr = new JLabel("Correo:");
+        lblCorr.setFont(new Font("Arial", Font.BOLD, 11));
+        lblCorr.setBounds(xLbl, yInicio + (espacio * 4), wLbl, hElem);
+        pnlForm.add(lblCorr);
         txtCorreo = new JTextField();
-        txtCorreo.setBounds(100, 210, 180, 25);
-        panel.add(txtCorreo);
+        txtCorreo.setBounds(xTxt, yInicio + (espacio * 4), wTxt, hElem);
+        pnlForm.add(txtCorreo);
 
         JLabel lblRol = new JLabel("Rol:");
-        lblRol.setBounds(20, 245, 80, 20);
-        panel.add(lblRol);
+        lblRol.setFont(new Font("Arial", Font.BOLD, 11));
+        lblRol.setBounds(xLbl, yInicio + (espacio * 5), wLbl, hElem);
+        pnlForm.add(lblRol);
+        cmbRol = new JComboBox<>(new String[]{"ADMIN", "ENCARGADO", "OPERADOR"});
+        cmbRol.setBounds(xTxt, yInicio + (espacio * 5), wTxt, hElem);
+        pnlForm.add(cmbRol);
 
-        cbRol = new JComboBox<>(new String[]{"ADMIN", "ENCARGADO", "OPERADOR"});
-        cbRol.setBounds(100, 245, 180, 25);
-        panel.add(cbRol);
+        chkActivo = new JCheckBox("Usuario Activo en el Sistema", true);
+        chkActivo.setFont(new Font("Arial", Font.PLAIN, 12));
+        chkActivo.setOpaque(false);
+        chkActivo.setBounds(xTxt, yInicio + (espacio * 6) - 5, wTxt, 25);
+        pnlForm.add(chkActivo);
 
-        chkActivo = new JCheckBox("Usuario Activo");
-        chkActivo.setSelected(true);
-        chkActivo.setBounds(100, 280, 180, 25);
-        chkActivo.setBackground(new Color(245, 247, 250));
-        panel.add(chkActivo);
+        etiquetasForm = new JLabel[]{lblUser, lblPass, lblNom, lblApe, lblCorr, lblRol};
 
-        // -------------------------------------------------------------------------
-        // BOTONES ORGANIZADOS (Crear, Modificar, Limpiar, Cambiar Estado)
-        // -------------------------------------------------------------------------
-        btnCrear = new JButton("Crear");
-        btnCrear.setBounds(20, 325, 125, 32);
-        btnCrear.setBackground(new Color(39, 174, 96)); // Verde
-        btnCrear.setForeground(Color.WHITE);
-        btnCrear.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnCrear);
+        // Botón para abrir la cámara y capturar las 52 fotos biométricas del usuario
+        JButton btnBio = new JButton("📷 Capturar Rostro (52 Fotos)");
+        btnBio.setBounds(15, yInicio + (espacio * 6) + 25, 340, 36);
+        btnBio.setBackground(new Color(41, 128, 185));
+        btnBio.setForeground(Color.WHITE);
+        btnBio.setFont(new Font("Arial", Font.BOLD, 11));
+        btnBio.setFocusPainted(false);
+        btnBio.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnBio.addActionListener(e -> {
+            String username = txtUsername.getText().trim();
+            if (username.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "Por favor, ingrese el nombre de usuario antes de capturar la biometría facial.",
+                        "Campo Requerido",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-        btnModificar = new JButton("Modificar");
-        btnModificar.setBounds(155, 325, 125, 32);
-        btnModificar.setBackground(new Color(41, 128, 185)); // Azul
-        btnModificar.setForeground(Color.WHITE);
-        btnModificar.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnModificar);
+            // Le paso el username exacto para que el servicio lo encuentre y guarde las muestras en SQL Server
+            CamaraCaptureDialog dialogCamara = new CamaraCaptureDialog(
+                    this,
+                    "Registro Facial Corporativo - " + username,
+                    true,
+                    username
+            );
+            dialogCamara.setVisible(true);
+        });
+        pnlForm.add(btnBio);
 
-        btnLimpiar = new JButton("Limpiar");
-        btnLimpiar.setBounds(20, 370, 125, 32);
-        btnLimpiar.setBackground(new Color(127, 140, 141)); // Gris
-        btnLimpiar.setForeground(Color.WHITE);
-        btnLimpiar.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnLimpiar);
+        // Botones de acción del CRUD
+        JButton btnCrear = crearBotonEstilizado("Crear", new Color(39, 174, 96));
+        btnCrear.setBounds(15, yInicio + (espacio * 8) - 10, 162, 36);
+        btnCrear.addActionListener(e -> registrarUsuario());
+        pnlForm.add(btnCrear);
 
-        btnCambiarEstado = new JButton("Cambiar Estado");
-        btnCambiarEstado.setBounds(155, 370, 125, 32);
-        btnCambiarEstado.setBackground(new Color(192, 57, 43)); // Rojo
-        btnCambiarEstado.setForeground(Color.WHITE);
-        btnCambiarEstado.setFont(new Font("Arial", Font.BOLD, 11));
-        panel.add(btnCambiarEstado);
+        JButton btnModificar = crearBotonEstilizado("Modificar", new Color(41, 128, 185));
+        btnModificar.setBounds(193, yInicio + (espacio * 8) - 10, 162, 36);
+        btnModificar.addActionListener(e -> modificarUsuario());
+        pnlForm.add(btnModificar);
 
-        // Tabla de Usuarios (Derecha)
-        String[] columnas = {"ID", "Usuario", "Nombre", "Apellido", "Rol", "Estado"};
-        modelTabla = new DefaultTableModel(columnas, 0) {
+        JButton btnLimpiar = crearBotonEstilizado("Limpiar", new Color(127, 140, 141));
+        btnLimpiar.setBounds(15, yInicio + (espacio * 9) - 10, 162, 36);
+        btnLimpiar.addActionListener(e -> limpiarCampos());
+        pnlForm.add(btnLimpiar);
+
+        JButton btnCambiarEstado = crearBotonEstilizado("Cambiar Estado", new Color(192, 57, 43));
+        btnCambiarEstado.setBounds(193, yInicio + (espacio * 9) - 10, 162, 36);
+        btnCambiarEstado.addActionListener(e -> cambiarEstadoUsuario());
+        pnlForm.add(btnCambiarEstado);
+
+        pnlCentro.add(pnlForm, BorderLayout.WEST);
+
+        // Tabla de usuarios a la derecha
+        modeloTabla = new DefaultTableModel(new String[]{"ID", "Usuario", "Nombre", "Apellido", "Rol", "Estado"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
+        tablaUsuarios = new JTable(modeloTabla);
+        tablaUsuarios.setRowHeight(26);
+        tablaUsuarios.setFont(new Font("Arial", Font.PLAIN, 12));
+        tablaUsuarios.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        tblUsuarios = new JTable(modelTabla);
-        JScrollPane scrollTabla = new JScrollPane(tblUsuarios);
-        scrollTabla.setBounds(310, 70, 510, 430);
-        panel.add(scrollTabla);
-
-        // Cargar los datos iniciales desde la base de datos
-        cargarTablaUsuarios();
-
-        // -------------------------------------------------------------------------
-        // EVENTOS DE LOS BOTONES
-        // -------------------------------------------------------------------------
-        btnLimpiar.addActionListener(e -> limpiarFormulario());
-
-        btnCrear.addActionListener(e -> {
-            if (validarCampos()) {
-                Usuario nuevo = construirUsuarioDesdeFormulario();
-                boolean exito = usuarioController.registrarUsuario(nuevo);
-                if (exito) {
-                    JOptionPane.showMessageDialog(this, "Usuario creado exitosamente.");
-                    cargarTablaUsuarios();
-                    limpiarFormulario();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error al crear el usuario.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
+        // Al hacer clic en la tabla paso los datos al formulario
+        tablaUsuarios.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && tablaUsuarios.getSelectedRow() != -1) {
+                cargarDatosEnFormulario(tablaUsuarios.getSelectedRow());
             }
         });
 
-        btnModificar.addActionListener(e -> {
-            if (idUsuarioSeleccionado == -1) {
-                JOptionPane.showMessageDialog(this, "Por favor seleccione un usuario de la tabla para modificar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (validarCamposModificacion()) {
-                Usuario modificado = construirUsuarioDesdeFormulario();
-                modificado.setIdUsuario(idUsuarioSeleccionado);
-                boolean exito = usuarioController.actualizarUsuario(modificado);
-                if (exito) {
-                    JOptionPane.showMessageDialog(this, "Usuario modificado exitosamente.");
-                    cargarTablaUsuarios();
-                    limpiarFormulario();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error al modificar el usuario.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
+        scrollTabla = new JScrollPane(tablaUsuarios);
+        pnlCentro.add(scrollTabla, BorderLayout.CENTER);
 
-        btnCambiarEstado.addActionListener(e -> {
-            if (idUsuarioSeleccionado == -1) {
-                JOptionPane.showMessageDialog(this, "Por favor seleccione un usuario de la tabla.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            boolean nuevoEstado = chkActivo.isSelected();
-            boolean exito = usuarioController.cambiarEstadoUsuario(idUsuarioSeleccionado, nuevoEstado);
-            if (exito) {
-                JOptionPane.showMessageDialog(this, "Estado del usuario actualizado.");
-                cargarTablaUsuarios();
-                limpiarFormulario();
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al cambiar el estado.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        mainPanel.add(pnlCentro, BorderLayout.CENTER);
 
-        // Evento de selección en la tabla
-        tblUsuarios.getSelectionModel().addListSelectionListener(e -> {
-            int row = tblUsuarios.getSelectedRow();
-            if (row != -1) {
-                idUsuarioSeleccionado = Integer.parseInt(modelTabla.getValueAt(row, 0).toString());
-                txtUsername.setText(modelTabla.getValueAt(row, 1).toString());
-                txtNombre.setText(modelTabla.getValueAt(row, 2).toString());
-                txtApellido.setText(modelTabla.getValueAt(row, 3).toString());
-                cbRol.setSelectedItem(modelTabla.getValueAt(row, 4).toString());
-                chkActivo.setSelected("Activo".equals(modelTabla.getValueAt(row, 5).toString()));
-                txtPassword.setText(""); // Se deja vacío por seguridad
-            }
-        });
+        // Panel inferior con el botón de cerrar idéntico al de configuración
+        pnlFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 12));
 
-        add(panel);
+        JButton btnCerrar = new JButton("Cerrar");
+        btnCerrar.setPreferredSize(new Dimension(100, 35));
+        btnCerrar.setFocusPainted(false);
+        btnCerrar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnCerrar.addActionListener(e -> dispose());
+        pnlFooter.add(btnCerrar);
+
+        mainPanel.add(pnlFooter, BorderLayout.SOUTH);
+
+        add(mainPanel);
     }
 
-    // Método para cargar usuarios de la BD a la JTable
-    private void cargarTablaUsuarios() {
-        modelTabla.setRowCount(0); // Limpiar tabla
+    // Aplico colores y estilos dependiendo si está activado el modo oscuro o claro
+    private void aplicarTemaVisual() {
+        if (modoOscuro) {
+            Color bgGeneral = new Color(20, 24, 33);
+            Color bgHeader = new Color(30, 36, 48);
+            Color bgCard = new Color(30, 36, 48);
+            Color txtColor = Color.WHITE;
+            Color inputBg = new Color(40, 48, 62);
+
+            mainPanel.setBackground(bgGeneral);
+            headerPanel.setBackground(bgHeader);
+            pnlCentro.setBackground(bgGeneral);
+            pnlForm.setBackground(bgCard);
+            pnlFooter.setBackground(bgHeader);
+
+            lblTitulo.setForeground(new Color(220, 230, 242));
+            lblSub.setForeground(new Color(180, 195, 215));
+
+            pnlForm.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(60, 75, 95)),
+                    " Datos del Usuario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(100, 180, 255)
+            ));
+
+            scrollTabla.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(60, 75, 95)),
+                    " Listado de Usuarios Registrados ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(100, 180, 255)
+            ));
+
+            for (JLabel lbl : etiquetasForm) {
+                lbl.setForeground(txtColor);
+            }
+            chkActivo.setForeground(txtColor);
+
+            JTextField[] campos = {txtUsername, txtNombre, txtApellido, txtCorreo};
+            for (JTextField campo : campos) {
+                campo.setBackground(inputBg);
+                campo.setForeground(Color.WHITE);
+                campo.setCaretColor(Color.WHITE);
+            }
+            txtPassword.setBackground(inputBg);
+            txtPassword.setForeground(Color.WHITE);
+            txtPassword.setCaretColor(Color.WHITE);
+            cmbRol.setBackground(inputBg);
+            cmbRol.setForeground(Color.WHITE);
+
+            tablaUsuarios.setBackground(new Color(30, 36, 48));
+            tablaUsuarios.setForeground(Color.WHITE);
+            tablaUsuarios.setGridColor(new Color(60, 75, 95));
+            tablaUsuarios.getTableHeader().setBackground(new Color(40, 48, 62));
+            tablaUsuarios.getTableHeader().setForeground(Color.WHITE);
+
+        } else {
+            Color bgGeneral = new Color(245, 247, 250);
+            Color bgHeader = new Color(30, 90, 150);
+            Color txtColor = new Color(40, 40, 40);
+
+            mainPanel.setBackground(bgGeneral);
+            headerPanel.setBackground(bgHeader);
+            pnlCentro.setBackground(bgGeneral);
+            pnlForm.setBackground(Color.WHITE);
+            pnlFooter.setBackground(new Color(235, 240, 245));
+
+            lblTitulo.setForeground(Color.WHITE);
+            lblSub.setForeground(new Color(220, 235, 255));
+
+            pnlForm.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(210, 220, 230)),
+                    " Datos del Usuario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(30, 90, 150)
+            ));
+
+            scrollTabla.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(210, 220, 230)),
+                    " Listado de Usuarios Registrados ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(30, 90, 150)
+            ));
+
+            for (JLabel lbl : etiquetasForm) {
+                lbl.setForeground(txtColor);
+            }
+            chkActivo.setForeground(txtColor);
+
+            JTextField[] campos = {txtUsername, txtNombre, txtApellido, txtCorreo};
+            for (JTextField campo : campos) {
+                campo.setBackground(Color.WHITE);
+                campo.setForeground(Color.BLACK);
+                campo.setCaretColor(Color.BLACK);
+            }
+            txtPassword.setBackground(Color.WHITE);
+            txtPassword.setForeground(Color.BLACK);
+            txtPassword.setCaretColor(Color.BLACK);
+            cmbRol.setBackground(Color.WHITE);
+            cmbRol.setForeground(Color.BLACK);
+
+            tablaUsuarios.setBackground(Color.WHITE);
+            tablaUsuarios.setForeground(Color.BLACK);
+            tablaUsuarios.setGridColor(new Color(220, 220, 220));
+            tablaUsuarios.getTableHeader().setBackground(new Color(230, 235, 245));
+            tablaUsuarios.getTableHeader().setForeground(Color.BLACK);
+        }
+        repaint();
+    }
+
+    private JButton crearBotonEstilizado(String texto, Color color) {
+        JButton btn = new JButton(texto);
+        btn.setBackground(color);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Arial", Font.BOLD, 12));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    // Cargo los usuarios en la tabla desde el controlador
+    private void cargarUsuariosEnTabla() {
+        modeloTabla.setRowCount(0);
         List<Usuario> lista = usuarioController.obtenerListaUsuarios();
         for (Usuario u : lista) {
-            String nombreRol = (u.getRol() != null) ? u.getRol().getNombre() : "OPERADOR";
-            String estadoStr = u.isActivo() ? "Activo" : "Inactivo";
             Object[] fila = {
                     u.getIdUsuario(),
                     u.getUsername(),
                     u.getNombre(),
                     u.getApellido(),
-                    nombreRol,
-                    estadoStr
+                    u.getRol() != null ? u.getRol().getNombre() : "OPERADOR",
+                    u.isActivo() ? "Activo" : "Inactivo"
             };
-            modelTabla.addRow(fila);
+            modeloTabla.addRow(fila);
         }
     }
 
-    private Usuario construirUsuarioDesdeFormulario() {
-        Usuario u = new Usuario();
-        u.setUsername(txtUsername.getText().trim());
-        u.setPassword(new String(txtPassword.getPassword()).trim());
-        u.setNombre(txtNombre.getText().trim());
-        u.setApellido(txtApellido.getText().trim());
-        u.setCorreo(txtCorreo.getText().trim().isEmpty() ? "sin_correo@sigelab.com" : txtCorreo.getText().trim());
-        u.setActivo(chkActivo.isSelected());
-
-        // Asignar rol según el ComboBox
-        String rolSeleccionado = cbRol.getSelectedItem().toString();
-        Rol rol = new Rol();
-        if ("ADMIN".equals(rolSeleccionado)) {
-            rol.setId(1);
-            rol.setNombre("ADMIN");
-        } else if ("ENCARGADO".equals(rolSeleccionado)) {
-            rol.setId(2);
-            rol.setNombre("ENCARGADO");
-        } else {
-            rol.setId(3);
-            rol.setNombre("OPERADOR");
-        }
-        u.setRol(rol);
-
-        return u;
+    // Relleno el formulario con los datos de la fila seleccionada
+    private void cargarDatosEnFormulario(int fila) {
+        txtUsername.setText(modeloTabla.getValueAt(fila, 1).toString());
+        txtPassword.setText("");
+        txtNombre.setText(modeloTabla.getValueAt(fila, 2).toString());
+        txtApellido.setText(modeloTabla.getValueAt(fila, 3).toString());
+        cmbRol.setSelectedItem(modeloTabla.getValueAt(fila, 4).toString());
+        chkActivo.setSelected("Activo".equalsIgnoreCase(modeloTabla.getValueAt(fila, 5).toString()));
     }
 
-    private boolean validarCampos() {
-        if (txtUsername.getText().trim().isEmpty() || new String(txtPassword.getPassword()).trim().isEmpty() ||
-                txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor complete los campos obligatorios (Usuario, Contraseña, Nombre, Apellido).", "Campos Incompletos", JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
-    private boolean validarCamposModificacion() {
-        if (txtUsername.getText().trim().isEmpty() || txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor complete los campos obligatorios.", "Campos Incompletos", JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        return true;
-    }
-
-    private void limpiarFormulario() {
-        idUsuarioSeleccionado = -1;
+    // Limpio los campos del formulario
+    private void limpiarCampos() {
         txtUsername.setText("");
         txtPassword.setText("");
         txtNombre.setText("");
         txtApellido.setText("");
         txtCorreo.setText("");
-        cbRol.setSelectedIndex(0);
+        cmbRol.setSelectedIndex(0);
         chkActivo.setSelected(true);
-        tblUsuarios.clearSelection();
-    }
-package com.sigelab.view;
-
-import com.sigelab.controller.UsuarioController;
-import com.sigelab.model.Rol;
-import com.sigelab.model.Usuario;
-import com.sigelab.service.FacialAuthService;
-
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
-public class UsuarioManagementView extends JFrame {
-
-    private JTable tblUsuarios;
-    private DefaultTableModel modelTabla;
-    private JTextField txtUsername, txtNombre, txtApellido, txtCorreo;
-    private JPasswordField txtPassword;
-    private JComboBox<String> cbRol;
-    private JCheckBox chkActivo;
-    private JButton btnCrear, btnModificar, btnLimpiar, btnCambiarEstado, btnCapturarRostro;
-
-    private UsuarioController usuarioController;
-    private FacialAuthService facialAuthService;
-
-    // Almacena las 52 muestras en ráfaga tomadas por el diálogo de la cámara
-    private List<File> fotosMuestrasCapturadas = new ArrayList<>();
-    private int idUsuarioSeleccionado = -1; // -1 indica modo creación (sin usuario seleccionado)
-
-    public UsuarioManagementView() {
-        this.usuarioController = new UsuarioController();
-        this.facialAuthService = new FacialAuthService();
-
-        setTitle("SIGELAB - Gestión de Usuarios (CRUD & Biometría Ráfaga)");
-        setSize(850, 640);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
-
-        JPanel panel = new JPanel();
-        panel.setLayout(null);
-        panel.setBackground(new Color(245, 247, 250));
-
-        // Encabezado
-        JPanel headerPanel = new JPanel();
-        headerPanel.setBounds(0, 0, 850, 50);
-        headerPanel.setBackground(new Color(52, 73, 94));
-        headerPanel.setLayout(null);
-
-        JLabel lblTitulo = new JLabel("Módulo de Gestión de Usuarios");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setBounds(20, 10, 350, 30);
-        headerPanel.add(lblTitulo);
-        panel.add(headerPanel);
-
-        // Formulario (Izquierda)
-        JLabel lblUser = new JLabel("Usuario:");
-        lblUser.setBounds(20, 70, 80, 20);
-        panel.add(lblUser);
-
-        txtUsername = new JTextField();
-        txtUsername.setBounds(100, 70, 180, 25);
-        panel.add(txtUsername);
-
-        JLabel lblPass = new JLabel("Contraseña:");
-        lblPass.setBounds(20, 105, 80, 20);
-        panel.add(lblPass);
-
-        txtPassword = new JPasswordField();
-        txtPassword.setBounds(100, 105, 180, 25);
-        panel.add(txtPassword);
-
-        JLabel lblNom = new JLabel("Nombre:");
-        lblNom.setBounds(20, 140, 80, 20);
-        panel.add(lblNom);
-
-        txtNombre = new JTextField();
-        txtNombre.setBounds(100, 140, 180, 25);
-        panel.add(txtNombre);
-
-        JLabel lblApe = new JLabel("Apellido:");
-        lblApe.setBounds(20, 175, 80, 20);
-        panel.add(lblApe);
-
-        txtApellido = new JTextField();
-        txtApellido.setBounds(100, 175, 180, 25);
-        panel.add(txtApellido);
-
-        JLabel lblMail = new JLabel("Correo:");
-        lblMail.setBounds(20, 210, 80, 20);
-        panel.add(lblMail);
-
-        txtCorreo = new JTextField();
-        txtCorreo.setBounds(100, 210, 180, 25);
-        panel.add(txtCorreo);
-
-        JLabel lblRol = new JLabel("Rol:");
-        lblRol.setBounds(20, 245, 80, 20);
-        panel.add(lblRol);
-
-        cbRol = new JComboBox<>(new String[]{"ADMIN", "ENCARGADO", "OPERADOR"});
-        cbRol.setBounds(100, 245, 180, 25);
-        panel.add(cbRol);
-
-        chkActivo = new JCheckBox("Usuario Activo");
-        chkActivo.setSelected(true);
-        chkActivo.setBounds(100, 280, 180, 25);
-        chkActivo.setBackground(new Color(245, 247, 250));
-        panel.add(chkActivo);
-
-        // -------------------------------------------------------------------------
-        // BOTÓN BIOMÉTRICO (Ráfaga de 52 Muestras)
-        // -------------------------------------------------------------------------
-        btnCapturarRostro = new JButton("📷 Capturar Rostro (52 Fotos)");
-        btnCapturarRostro.setBounds(20, 315, 260, 35);
-        btnCapturarRostro.setBackground(new Color(40, 120, 180));
-        btnCapturarRostro.setForeground(Color.WHITE);
-        btnCapturarRostro.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnCapturarRostro);
-
-        // -------------------------------------------------------------------------
-        // BOTONES DE ACCIÓN
-        // -------------------------------------------------------------------------
-        btnCrear = new JButton("Crear");
-        btnCrear.setBounds(20, 365, 125, 32);
-        btnCrear.setBackground(new Color(39, 174, 96));
-        btnCrear.setForeground(Color.WHITE);
-        btnCrear.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnCrear);
-
-        btnModificar = new JButton("Modificar");
-        btnModificar.setBounds(155, 365, 125, 32);
-        btnModificar.setBackground(new Color(41, 128, 185));
-        btnModificar.setForeground(Color.WHITE);
-        btnModificar.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnModificar);
-
-        btnLimpiar = new JButton("Limpiar");
-        btnLimpiar.setBounds(20, 410, 125, 32);
-        btnLimpiar.setBackground(new Color(127, 140, 141));
-        btnLimpiar.setForeground(Color.WHITE);
-        btnLimpiar.setFont(new Font("Arial", Font.BOLD, 12));
-        panel.add(btnLimpiar);
-
-        btnCambiarEstado = new JButton("Cambiar Estado");
-        btnCambiarEstado.setBounds(155, 410, 125, 32);
-        btnCambiarEstado.setBackground(new Color(192, 57, 43));
-        btnCambiarEstado.setForeground(Color.WHITE);
-        btnCambiarEstado.setFont(new Font("Arial", Font.BOLD, 11));
-        panel.add(btnCambiarEstado);
-
-        // Tabla de Usuarios
-        String[] columnas = {"ID", "Usuario", "Nombre", "Apellido", "Rol", "Estado"};
-        modelTabla = new DefaultTableModel(columnas, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        tblUsuarios = new JTable(modelTabla);
-        JScrollPane scrollTabla = new JScrollPane(tblUsuarios);
-        scrollTabla.setBounds(310, 70, 510, 500);
-        panel.add(scrollTabla);
-
-        cargarTablaUsuarios();
-
-        // -------------------------------------------------------------------------
-        // EVENTOS DE LOS BOTONES
-        // -------------------------------------------------------------------------
-        btnCapturarRostro.addActionListener(e -> capturarRostroBiometrico());
-
-        btnLimpiar.addActionListener(e -> limpiarFormulario());
-
-        btnCrear.addActionListener(e -> {
-            idUsuarioSeleccionado = -1;
-
-            if (validarCampos()) {
-                Usuario nuevo = construirUsuarioDesdeFormulario();
-                boolean exito = usuarioController.registrarUsuario(nuevo);
-
-                if (exito) {
-                    // Refrescar la tabla para asegurar la inserción del usuario en SQL Server
-                    cargarTablaUsuarios();
-
-                    // Si se capturó la ráfaga de 52 muestras, se guardan en la base de datos
-                    if (!fotosMuestrasCapturadas.isEmpty()) {
-                        boolean bioGuardada = facialAuthService.registrarMuestrasBiometricas(fotosMuestrasCapturadas, nuevo.getUsername());
-                        if (bioGuardada) {
-                            JOptionPane.showMessageDialog(this, "Usuario " + nuevo.getUsername() + " y biometría guardados con éxito en la base de datos.");
-                        } else {
-                            JOptionPane.showMessageDialog(this, "Usuario " + nuevo.getUsername() + " guardado, pero hubo un error al guardar la biometría.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Usuario " + nuevo.getUsername() + " guardado con éxito.");
-                    }
-
-                    limpiarFormulario();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error al crear el usuario.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        btnModificar.addActionListener(e -> {
-            if (idUsuarioSeleccionado == -1) {
-                JOptionPane.showMessageDialog(this, "Seleccione un usuario de la tabla para modificar.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (validarCamposModificacion()) {
-                Usuario modificado = construirUsuarioDesdeFormulario();
-                modificado.setIdUsuario(idUsuarioSeleccionado);
-                boolean exito = usuarioController.actualizarUsuario(modificado);
-                if (exito) {
-                    if (!fotosMuestrasCapturadas.isEmpty()) {
-                        facialAuthService.registrarMuestrasBiometricas(fotosMuestrasCapturadas, modificado.getUsername());
-                    }
-                    JOptionPane.showMessageDialog(this, "Usuario e información biométrica actualizados en la base de datos.");
-                    cargarTablaUsuarios();
-                    limpiarFormulario();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error al modificar el usuario.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        btnCambiarEstado.addActionListener(e -> {
-            if (idUsuarioSeleccionado == -1) {
-                JOptionPane.showMessageDialog(this, "Seleccione un usuario de la tabla.", "Aviso", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            boolean nuevoEstado = chkActivo.isSelected();
-            boolean exito = usuarioController.cambiarEstadoUsuario(idUsuarioSeleccionado, nuevoEstado);
-            if (exito) {
-                JOptionPane.showMessageDialog(this, "Estado del usuario actualizado.");
-                cargarTablaUsuarios();
-                limpiarFormulario();
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al cambiar el estado.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        tblUsuarios.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                int row = tblUsuarios.getSelectedRow();
-                if (row != -1) {
-                    idUsuarioSeleccionado = Integer.parseInt(modelTabla.getValueAt(row, 0).toString());
-                    txtUsername.setText(modelTabla.getValueAt(row, 1).toString());
-                    txtNombre.setText(modelTabla.getValueAt(row, 2).toString());
-                    txtApellido.setText(modelTabla.getValueAt(row, 3).toString());
-                    cbRol.setSelectedItem(modelTabla.getValueAt(row, 4).toString());
-                    chkActivo.setSelected("Activo".equals(modelTabla.getValueAt(row, 5).toString()));
-                    txtPassword.setText("");
-                }
-            }
-        });
-
-        add(panel);
+        tablaUsuarios.clearSelection();
     }
 
-    // Abre el diálogo modal de la cámara para la captura en ráfaga de 52 fotos
-    private void capturarRostroBiometrico() {
-        String username = txtUsername.getText().trim();
-        if (username.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Ingrese el nombre de usuario primero.",
-                    "Campo Requerido", JOptionPane.WARNING_MESSAGE);
+    // Registro un nuevo usuario en la base de datos
+    private void registrarUsuario() {
+        if (txtUsername.getText().isEmpty() || new String(txtPassword.getPassword()).isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El usuario y la contraseña son obligatorios.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Se pasa 'true' para activar la captura biométrica de 52 fotos
-        CamaraCaptureDialog dialogCamara = new CamaraCaptureDialog(this, "Captura Biométrica Ráfaga - " + username, true);
-        dialogCamara.setVisible(true);
-
-        List<File> muestras = dialogCamara.getListaFotosCapturadas();
-        if (muestras != null && !muestras.isEmpty()) {
-            this.fotosMuestrasCapturadas = muestras;
-            btnCapturarRostro.setText("✅ " + muestras.size() + " Muestras Capturadas");
-            btnCapturarRostro.setBackground(new Color(39, 174, 96));
-        }
-    }
-
-    private void cargarTablaUsuarios() {
-        modelTabla.setRowCount(0);
-        List<Usuario> lista = usuarioController.obtenerListaUsuarios();
-        if (lista != null) {
-            for (Usuario u : lista) {
-                String nombreRol = (u.getRol() != null) ? u.getRol().getNombre() : "OPERADOR";
-                String estadoStr = u.isActivo() ? "Activo" : "Inactivo";
-                Object[] fila = {
-                        u.getIdUsuario(),
-                        u.getUsername(),
-                        u.getNombre(),
-                        u.getApellido(),
-                        nombreRol,
-                        estadoStr
-                };
-                modelTabla.addRow(fila);
-            }
-        }
-    }
-
-    private Usuario construirUsuarioDesdeFormulario() {
         Usuario u = new Usuario();
         u.setUsername(txtUsername.getText().trim());
-        u.setPassword(new String(txtPassword.getPassword()).trim());
+        u.setPassword(new String(txtPassword.getPassword()));
         u.setNombre(txtNombre.getText().trim());
         u.setApellido(txtApellido.getText().trim());
-        u.setCorreo(txtCorreo.getText().trim().isEmpty() ? "sin_correo@sigelab.com" : txtCorreo.getText().trim());
+        u.setCorreo(txtCorreo.getText().trim().isEmpty() ? txtUsername.getText().trim() + "@sigelab.com" : txtCorreo.getText().trim());
         u.setActivo(chkActivo.isSelected());
 
-        String rolSeleccionado = cbRol.getSelectedItem().toString();
-        Rol rol = new Rol();
-        if ("ADMIN".equals(rolSeleccionado)) {
-            rol.setId(1);
-            rol.setNombre("ADMIN");
-        } else if ("ENCARGADO".equals(rolSeleccionado)) {
-            rol.setId(2);
-            rol.setNombre("ENCARGADO");
+        Rol r = new Rol();
+        String rolSeleccionado = cmbRol.getSelectedItem().toString();
+        r.setId(rolSeleccionado.equals("ADMIN") ? 1 : (rolSeleccionado.equals("ENCARGADO") ? 2 : 3));
+        r.setNombre(rolSeleccionado);
+        u.setRol(r);
+
+        boolean exito = usuarioController.registrarUsuario(u);
+        if (exito) {
+            JOptionPane.showMessageDialog(this, "¡Usuario registrado con éxito!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            cargarUsuariosEnTabla();
+            limpiarCampos();
         } else {
-            rol.setId(3);
-            rol.setNombre("OPERADOR");
+            JOptionPane.showMessageDialog(this, "Error al registrar el usuario en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-        u.setRol(rol);
-
-        return u;
     }
 
-    private boolean validarCampos() {
-        if (txtUsername.getText().trim().isEmpty() || new String(txtPassword.getPassword()).trim().isEmpty() ||
-                txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Campos Incompletos", JOptionPane.WARNING_MESSAGE);
-            return false;
+    // Modifico la información del usuario seleccionado
+    private void modificarUsuario() {
+        int fila = tablaUsuarios.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un usuario de la tabla para modificar.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-        return true;
-    }
 
-    private boolean validarCamposModificacion() {
-        if (txtUsername.getText().trim().isEmpty() || txtNombre.getText().trim().isEmpty() || txtApellido.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Complete los campos obligatorios.", "Campos Incompletos", JOptionPane.WARNING_MESSAGE);
-            return false;
+        int idUsuario = Integer.parseInt(modeloTabla.getValueAt(fila, 0).toString());
+
+        Usuario u = new Usuario();
+        u.setIdUsuario(idUsuario);
+        u.setUsername(txtUsername.getText().trim());
+        u.setNombre(txtNombre.getText().trim());
+        u.setApellido(txtApellido.getText().trim());
+        u.setCorreo(txtCorreo.getText().trim());
+        u.setActivo(chkActivo.isSelected());
+
+        Rol r = new Rol();
+        String rolSeleccionado = cmbRol.getSelectedItem().toString();
+        r.setId(rolSeleccionado.equals("ADMIN") ? 1 : (rolSeleccionado.equals("ENCARGADO") ? 2 : 3));
+        r.setNombre(rolSeleccionado);
+        u.setRol(r);
+
+        boolean exito = usuarioController.actualizarUsuario(u);
+        if (exito) {
+            JOptionPane.showMessageDialog(this, "¡Usuario modificado con éxito!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            cargarUsuariosEnTabla();
+            limpiarCampos();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al actualizar el usuario.", "Error", JOptionPane.ERROR_MESSAGE);
         }
-        return true;
     }
 
-    private void limpiarFormulario() {
-        idUsuarioSeleccionado = -1;
-        fotosMuestrasCapturadas.clear();
-        txtUsername.setText("");
-        txtPassword.setText("");
-        txtNombre.setText("");
-        txtApellido.setText("");
-        txtCorreo.setText("");
-        cbRol.setSelectedIndex(0);
-        chkActivo.setSelected(true);
-        btnCapturarRostro.setText("📷 Capturar Rostro (52 Fotos)");
-        btnCapturarRostro.setBackground(new Color(40, 120, 180));
-        tblUsuarios.clearSelection();
-    }
+    // Cambio el estado activo o inactivo del usuario
+    private void cambiarEstadoUsuario() {
+        int fila = tablaUsuarios.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un usuario de la tabla.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    // Método main para ejecutar la vista de forma independiente
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            UsuarioManagementView vista = new UsuarioManagementView();
-            vista.setVisible(true);
-        });
+        int idUsuario = Integer.parseInt(modeloTabla.getValueAt(fila, 0).toString());
+        String estadoActual = modeloTabla.getValueAt(fila, 5).toString();
+        boolean nuevoEstado = !("Activo".equalsIgnoreCase(estadoActual));
+
+        boolean exito = usuarioController.cambiarEstadoUsuario(idUsuario, nuevoEstado);
+        if (exito) {
+            JOptionPane.showMessageDialog(this, "¡Estado del usuario actualizado!", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            cargarUsuariosEnTabla();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al cambiar el estado.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

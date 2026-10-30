@@ -14,3 +14,4 @@ public class Main {
             login.setVisible(true); // Muestra la ventana de Login al arrancar el programa
         });
     }
+}

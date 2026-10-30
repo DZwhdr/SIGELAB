@@ -1,18 +1,22 @@
+
 package com.sigelab.repository;
 
-import com.sigelab.repository.ConexionBD;
-import org.example.enums.EstadoEquipo;
-import org.example.model.Equipo;
-import org.example.model.Laboratorio;
+import com.sigelab.model.Equipo;
+import com.sigelab.model.Laboratorio;
 import com.sigelab.model.TipoEquipo;
+import org.example.enums.EstadoEquipo;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EquipoRepository {
 
-    // Une los datos del equipo con su tipo y laboratorio.
+    // Consulta que obtiene el equipo, su tipo y su laboratorio.
     private static final String CONSULTA_BASE = """
             SELECT e.id, e.codigo_inventario, e.nombre,
                    e.marca, e.modelo, e.serie,
@@ -31,7 +35,9 @@ public class EquipoRepository {
                 ON e.id_laboratorio = l.id
             """;
 
+    // Guardar un equipo nuevo.
     public void guardar(Equipo equipo) throws SQLException {
+
         String sql = """
                 INSERT INTO dbo.Equipo
                     (codigo_inventario, nombre, id_tipo_equipo,
@@ -58,7 +64,9 @@ public class EquipoRepository {
         }
     }
 
+    // Listar todos los equipos.
     public List<Equipo> listar() throws SQLException {
+
         List<Equipo> equipos = new ArrayList<>();
         String sql = CONSULTA_BASE + " ORDER BY e.id";
 
@@ -75,8 +83,11 @@ public class EquipoRepository {
         return equipos;
     }
 
+    // Buscar un equipo por código de inventario.
     public Equipo buscarPorCodigo(String codigo) throws SQLException {
-        String sql = CONSULTA_BASE + " WHERE e.codigo_inventario = ?";
+
+        String sql = CONSULTA_BASE
+                + " WHERE e.codigo_inventario = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
@@ -94,7 +105,9 @@ public class EquipoRepository {
         return null;
     }
 
+    // Actualizar un equipo existente.
     public boolean actualizar(Equipo equipo) throws SQLException {
+
         String sql = """
                 UPDATE dbo.Equipo
                 SET codigo_inventario = ?,
@@ -120,7 +133,7 @@ public class EquipoRepository {
         }
     }
 
-    // Coloca cada dato en el signo ? correspondiente.
+    // Asignar los valores a los parámetros SQL.
     private void colocarDatos(
             PreparedStatement sentencia,
             Equipo equipo
@@ -137,7 +150,7 @@ public class EquipoRepository {
         sentencia.setString(9, equipo.getObservaciones());
     }
 
-    // Convierte una fila de SQL Server en objetos Java.
+    // Convertir una fila de SQL Server en un objeto Equipo.
     private Equipo convertirEquipo(ResultSet resultado)
             throws SQLException {
 
@@ -156,19 +169,25 @@ public class EquipoRepository {
         );
 
         Equipo equipo = new Equipo();
+
         equipo.setId(resultado.getInt("id"));
         equipo.setCodigoInventario(
-                resultado.getString("codigo_inventario"));
+                resultado.getString("codigo_inventario")
+        );
         equipo.setNombre(resultado.getString("nombre"));
         equipo.setTipoEquipo(tipo);
         equipo.setMarca(resultado.getString("marca"));
         equipo.setModelo(resultado.getString("modelo"));
         equipo.setSerie(resultado.getString("serie"));
         equipo.setLaboratorio(laboratorio);
-        equipo.setEstado(EstadoEquipo.valueOf(
-                resultado.getString("estado")));
+
+        equipo.setEstado(
+                EstadoEquipo.valueOf(resultado.getString("estado"))
+        );
+
         equipo.setObservaciones(
-                resultado.getString("observaciones"));
+                resultado.getString("observaciones")
+        );
 
         return equipo;
     }
