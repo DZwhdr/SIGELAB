@@ -113,16 +113,19 @@ public class DevolucionView extends JFrame {
         JButton btnActualizar = crearBoton("Actualizar", new Color(41, 128, 185));
         JButton btnEliminar = crearBoton("Eliminar", new Color(192, 57, 43));
         JButton btnLimpiar = crearBoton("Limpiar", new Color(127, 140, 141));
+        JButton btnVolver = crearBoton("Volver al menú", new Color(52, 73, 94));
 
         btnGuardar.addActionListener(e -> guardar());
         btnActualizar.addActionListener(e -> actualizar());
         btnEliminar.addActionListener(e -> eliminar());
         btnLimpiar.addActionListener(e -> limpiarFormulario());
+        btnVolver.addActionListener(e -> dispose());
 
         panelBotones.add(btnGuardar);
         panelBotones.add(btnActualizar);
         panelBotones.add(btnEliminar);
         panelBotones.add(btnLimpiar);
+        panelBotones.add(btnVolver);
 
         contenido.add(panelBotones, BorderLayout.SOUTH);
         panelPrincipal.add(contenido, BorderLayout.CENTER);
