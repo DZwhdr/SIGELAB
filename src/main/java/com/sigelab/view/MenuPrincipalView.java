@@ -312,13 +312,9 @@ public class MenuPrincipalView extends JFrame {
                         new DevolucionView().setVisible(true);
                     });
 
-                    btnMantenimiento.addActionListener(evento -> {
-                        JOptionPane.showMessageDialog(
-                                ventana,
-                                "El módulo de Mantenimiento se agregará a continuación.",
-                                "Mantenimiento",
-                                JOptionPane.INFORMATION_MESSAGE
-                        );
+                    btnMantenimiento.addActionListener(eventoMantenimiento -> {
+                        ventana.dispose();
+                        new MantenimientoView().setVisible(true);
                     });
 
                     panel.add(titulo);
