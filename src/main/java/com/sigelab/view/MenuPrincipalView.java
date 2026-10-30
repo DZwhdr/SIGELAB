@@ -308,12 +308,8 @@ public class MenuPrincipalView extends JFrame {
                     btnMantenimiento.setAlignmentX(Component.CENTER_ALIGNMENT);
 
                     btnDevoluciones.addActionListener(evento -> {
-                        JOptionPane.showMessageDialog(
-                                ventana,
-                                "El módulo de Devoluciones se agregará a continuación.",
-                                "Devoluciones",
-                                JOptionPane.INFORMATION_MESSAGE
-                        );
+                        ventana.dispose();
+                        new DevolucionView().setVisible(true);
                     });
 
                     btnMantenimiento.addActionListener(evento -> {
