@@ -1,0 +1,486 @@
+package com.sigelab.view;
+
+import com.sigelab.model.Usuario;
+import com.sigelab.repository.DashboardDAO;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+public class MenuPrincipalView extends JFrame {
+
+    private final Usuario usuarioLogueado;
+    private boolean modoOscuro;
+
+    private JPanel centerWrapper;
+    private JPanel pnlContenido;
+    private JPanel headerPanel;
+    private JPanel pnlStats;
+    private JLabel lblTitulo;
+    private JLabel lblUserInfo;
+    private JLabel lblAvatarHeader;
+
+    // Labels para las métricas (para poder actualizarlas)
+    private JLabel lblTotalEquipos;
+    private JLabel lblDisponibles;
+    private JLabel lblPrestados;
+    private JLabel lblDanadosMantenimiento;
+
+    public MenuPrincipalView(Usuario usuario, boolean modoOscuro) {
+        this.usuarioLogueado = usuario;
+        this.modoOscuro = modoOscuro;
+
+        setTitle("SIGELAB - Sistema de Gestión de Laboratorios Universitarios");
+        setSize(900, 700);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(true);
+
+        setLayout(new BorderLayout());
+
+        // Encabezado principal del dashboard
+        headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
+
+        lblTitulo = new JLabel("SIGELAB - Dashboard Principal");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
+        headerPanel.add(lblTitulo, BorderLayout.WEST);
+
+        JPanel pnlUserHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        pnlUserHeader.setOpaque(false);
+
+        String nombreRol = usuario.getRol() != null
+                ? usuario.getRol().getNombre()
+                : "SIN ROL";
+
+        lblUserInfo = new JLabel(
+                "<html><div style='text-align: right;'>Usuario: <b>" + usuario.getNombre() + " "
+                        + usuario.getApellido() + "</b> [" + nombreRol + "]</div></html>"
+        );
+        lblUserInfo.setFont(new Font("Arial", Font.PLAIN, 12));
+        pnlUserHeader.add(lblUserInfo);
+
+        // Avatar en el header para mostrar la foto única del usuario
+        lblAvatarHeader = new JLabel();
+        lblAvatarHeader.setPreferredSize(new Dimension(40, 40));
+        cargarFotoAvatarHeader();
+        pnlUserHeader.add(lblAvatarHeader);
+
+        headerPanel.add(pnlUserHeader, BorderLayout.EAST);
+        add(headerPanel, BorderLayout.NORTH);
+
+        // Contenedor central y tarjetas de métricas
+        centerWrapper = new JPanel(new GridBagLayout());
+
+        pnlContenido = new JPanel();
+        pnlContenido.setLayout(new BoxLayout(pnlContenido, BoxLayout.Y_AXIS));
+
+        pnlStats = new JPanel(new GridLayout(1, 4, 10, 10));
+        pnlStats.setPreferredSize(new Dimension(835, 80));
+        pnlStats.setMaximumSize(new Dimension(835, 80));
+
+        // Inicializamos los labels vacíos para actualizarlos luego
+        lblTotalEquipos = new JLabel("--", SwingConstants.CENTER);
+        lblDisponibles = new JLabel("--", SwingConstants.CENTER);
+        lblPrestados = new JLabel("--", SwingConstants.CENTER);
+        lblDanadosMantenimiento = new JLabel("--", SwingConstants.CENTER);
+
+        pnlStats.add(crearMetrica("Total Equipos", lblTotalEquipos, "#1e3c72"));
+        pnlStats.add(crearMetrica("Disponibles", lblDisponibles, "#27ae60"));
+        pnlStats.add(crearMetrica("Prestados", lblPrestados, "#2980b9"));
+        pnlStats.add(crearMetrica("Dañados / Mant.", lblDanadosMantenimiento, "#c0392b"));
+
+        // Cargar los datos reales de la BD
+        cargarMetricasDesdeBD();
+
+        pnlContenido.add(pnlStats);
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Préstamos y Código QR", new Color(41, 128, 185)),
+                crearBoton("Devoluciones y Mantenimiento", new Color(39, 174, 96))
+        ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Equipos y Laboratorios", new Color(142, 68, 173)),
+                crearBoton("Reportes y Auditoría", new Color(230, 126, 34))
+        ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        pnlContenido.add(crearFilaBotones(
+                crearBoton("Gestión de Usuarios (ADMIN)", new Color(52, 73, 94)),
+                crearBoton("Configuración del Sistema", new Color(44, 62, 80))
+        ));
+        pnlContenido.add(Box.createRigidArea(new Dimension(0, 20)));
+
+        JButton btnLogout = crearBoton("Cerrar Sesión", new Color(192, 57, 43));
+        btnLogout.setPreferredSize(new Dimension(250, 45));
+        btnLogout.setMaximumSize(new Dimension(250, 45));
+
+        JPanel pnlLogout = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pnlLogout.add(btnLogout);
+        pnlContenido.add(pnlLogout);
+
+        centerWrapper.add(pnlContenido);
+        add(centerWrapper, BorderLayout.CENTER);
+
+        aplicarTemaGlobal();
+    }
+
+    // Método que consulta el DashboardDAO y actualiza los números en pantalla
+    private void cargarMetricasDesdeBD() {
+        DashboardDAO dao = new DashboardDAO();
+
+        int total = dao.obtenerTotalEquipos();
+        int disponibles = dao.obtenerCantidadEquiposPorEstado("Disponible");
+        int prestados = dao.obtenerCantidadEquiposPorEstado("Prestado");
+        int danados = dao.obtenerCantidadEquiposPorEstado("Dañado");
+        int enMantenimiento = dao.obtenerCantidadEquiposPorEstado("Mantenimiento");
+
+        lblTotalEquipos.setText(String.valueOf(total));
+        lblDisponibles.setText(String.valueOf(disponibles));
+        lblPrestados.setText(String.valueOf(prestados));
+        lblDanadosMantenimiento.setText(String.valueOf(danados + enMantenimiento));
+    }
+
+    // Cargo la foto usando el ID único del usuario logueado para que no falle con ningún nombre
+    private void cargarFotoAvatarHeader() {
+        int idUser = (usuarioLogueado != null) ? usuarioLogueado.getIdUsuario() : 0;
+        File archivoFoto = new File("uploads/perfiles/usuario_" + idUser + ".jpg");
+
+        if (archivoFoto.exists()) {
+            try {
+                BufferedImage imgOriginal = ImageIO.read(archivoFoto);
+                if (imgOriginal != null) {
+                    Image imgEscalada = imgOriginal.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                    lblAvatarHeader.setText("");
+                    lblAvatarHeader.setIcon(new ImageIcon(imgEscalada));
+                    return;
+                }
+            } catch (IOException e) {
+                // Si falla se queda con el icono por defecto
+            }
+        }
+        lblAvatarHeader.setText("👤");
+        lblAvatarHeader.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 20));
+        lblAvatarHeader.setForeground(Color.WHITE);
+    }
+
+    // Método para refrescar la foto del avatar en el menú al cerrar la configuración
+    public void refrescarAvatar() {
+        cargarFotoAvatarHeader();
+    }
+
+    // Cambiar colores dinámicamente según el modo oscuro o claro
+    private void aplicarTemaGlobal() {
+        if (modoOscuro) {
+            Color fondoOscuro = new Color(20, 24, 33);
+            Color headerOscuro = new Color(30, 36, 48);
+            Color tarjetaOscura = new Color(30, 36, 48);
+
+            centerWrapper.setBackground(fondoOscuro);
+            pnlContenido.setBackground(fondoOscuro);
+            headerPanel.setBackground(headerOscuro);
+
+            lblTitulo.setForeground(new Color(220, 230, 242));
+            lblUserInfo.setForeground(new Color(255, 215, 0));
+
+            pnlStats.setBackground(tarjetaOscura);
+            pnlStats.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(60, 75, 95)),
+                    " Resumen de Inventario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(100, 180, 255)
+            ));
+
+            // Color de los números en modo oscuro
+            lblTotalEquipos.setForeground(new Color(100, 180, 255));
+            lblDisponibles.setForeground(new Color(46, 204, 113));
+            lblPrestados.setForeground(new Color(52, 152, 219));
+            lblDanadosMantenimiento.setForeground(new Color(231, 76, 60));
+
+            Component[] comps = pnlContenido.getComponents();
+            for (Component comp : comps) {
+                if (comp instanceof JPanel) {
+                    comp.setBackground(fondoOscuro);
+                }
+            }
+        } else {
+            Color fondoClaro = new Color(245, 247, 250);
+            Color headerClaro = new Color(30, 60, 114);
+
+            centerWrapper.setBackground(fondoClaro);
+            pnlContenido.setBackground(fondoClaro);
+            headerPanel.setBackground(headerClaro);
+
+            lblTitulo.setForeground(Color.WHITE);
+            lblUserInfo.setForeground(new Color(200, 220, 255));
+
+            pnlStats.setBackground(Color.WHITE);
+            pnlStats.setBorder(BorderFactory.createTitledBorder(
+                    BorderFactory.createLineBorder(new Color(180, 190, 200)),
+                    " Resumen de Inventario ",
+                    0, 0,
+                    new Font("Arial", Font.BOLD, 12),
+                    new Color(30, 60, 114)
+            ));
+
+            // Color de los números en modo claro
+            lblTotalEquipos.setForeground(new Color(30, 60, 114));
+            lblDisponibles.setForeground(new Color(39, 174, 96));
+            lblPrestados.setForeground(new Color(41, 128, 185));
+            lblDanadosMantenimiento.setForeground(new Color(192, 57, 43));
+
+            Component[] comps = pnlContenido.getComponents();
+            for (Component comp : comps) {
+                if (comp instanceof JPanel) {
+                    comp.setBackground(fondoClaro);
+                }
+            }
+        }
+        repaint();
+    }
+
+    private JPanel crearFilaBotones(JButton btn1, JButton btn2) {
+        JPanel fila = new JPanel(new GridLayout(1, 2, 15, 0));
+        fila.setPreferredSize(new Dimension(835, 55));
+        fila.setMaximumSize(new Dimension(835, 55));
+        fila.add(btn1);
+        fila.add(btn2);
+        return fila;
+    }
+
+    // Manejo de acciones de los botones principales y permisos de admin
+    private JButton crearBoton(String texto, Color color) {
+        JButton boton = new JButton(texto);
+        boton.setBackground(color);
+        boton.setForeground(Color.WHITE);
+        boton.setFont(new Font("Arial", Font.BOLD, 14));
+        boton.setFocusPainted(false);
+        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        boolean esAdmin = "ADMIN".equalsIgnoreCase(
+                usuarioLogueado.getRol() != null ? usuarioLogueado.getRol().getNombre() : ""
+        ) || "ADMINISTRADOR".equalsIgnoreCase(
+                usuarioLogueado.getRol() != null ? usuarioLogueado.getRol().getNombre() : ""
+        );
+
+        if (texto.equals("Gestión de Usuarios (ADMIN)")) {
+            boton.addActionListener(e -> {
+                if (esAdmin) {
+                    new UsuarioManagementView(modoOscuro).setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Esta función requiere privilegios de administrador.",
+                            "Permisos insuficientes",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+                }
+            });
+        } else if (texto.equals("Configuración del Sistema")) {
+            boton.addActionListener(e -> {
+                ConfiguracionView configView = new ConfiguracionView(
+                        this,
+                        usuarioLogueado,
+                        modoOscuro,
+                        (nuevoModo) -> {
+                            this.modoOscuro = nuevoModo;
+                            aplicarTemaGlobal();
+                        }
+                );
+                configView.addWindowListener(new java.awt.event.WindowAdapter() {
+                    @Override
+                    public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                        refrescarAvatar();
+                    }
+                });
+                configView.setVisible(true);
+            });
+
+        } else if (texto.equals("Préstamos y Código QR")) {
+            boton.addActionListener(e -> {
+
+                String[] opciones = {
+                        "Registrar préstamo",
+                        "Consultar equipo por QR",
+                        "Generar código QR",
+                        "Cancelar"
+                };
+
+                int seleccion = JOptionPane.showOptionDialog(
+                        this,
+                        "¿Qué deseas realizar?",
+                        "SIGELAB - Préstamos y Código QR",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opciones,
+                        opciones[0]
+                );
+
+                if (seleccion == 0) {
+                    new PrestamoView(usuarioLogueado).setVisible(true);
+
+                } else if (seleccion == 1) {
+                    new ConsultaEquipoQRForm(usuarioLogueado).setVisible(true);
+
+                } else if (seleccion == 2) {
+                    new GenerarEquipoQRForm().setVisible(true);
+                }
+            });
+
+
+        } else if (texto.equals("Devoluciones y Mantenimiento")) {
+            boton.addActionListener(e -> {
+
+                String[] opciones = {
+                        "Gestión de Devoluciones",
+                        "Gestión de Mantenimiento",
+                        "Cancelar"
+                };
+
+                int seleccion = JOptionPane.showOptionDialog(
+                        this,
+                        "¿Qué módulo deseas abrir?",
+                        "SIGELAB - Devoluciones y Mantenimiento",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opciones,
+                        opciones[0]
+                );
+
+                if (seleccion == 0) {
+                    new DevolucionView().setVisible(true);
+
+                } else if (seleccion == 1) {
+                    new MantenimientoView().setVisible(true);
+                }
+            });
+
+
+        } else if (texto.equals("Equipos y Laboratorios")) {
+            boton.addActionListener(e -> {
+
+                String[] opciones = {
+                        "Administración de Equipos",
+                        "Gestión de Laboratorios",
+                        "Gestión de Tipos de Equipo",
+                        "Cancelar"
+                };
+
+                int seleccion = JOptionPane.showOptionDialog(
+                        this,
+                        "¿Qué módulo deseas abrir?",
+                        "SIGELAB - Equipos y Laboratorios",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opciones,
+                        opciones[0]
+                );
+
+                if (seleccion == 0) {
+                    new EquipoView().setVisible(true);
+
+                } else if (seleccion == 1) {
+                    JFrame ventanaLab = new JFrame(
+                            "SIGELAB - Gestión de Laboratorios"
+                    );
+
+                    ventanaLab.setDefaultCloseOperation(
+                            JFrame.DISPOSE_ON_CLOSE
+                    );
+
+                    ventanaLab.setSize(1000, 650);
+                    ventanaLab.setLocationRelativeTo(this);
+                    ventanaLab.add(new LaboratorioView());
+                    ventanaLab.setVisible(true);
+
+                } else if (seleccion == 2) {
+                    new TipoEquipoForm().setVisible(true);
+                }
+            });
+
+
+        } else if (texto.equals("Reportes y Auditoría")) {
+
+            boton.addActionListener(e -> {
+
+                String[] opciones = {
+                        "Abrir Reportes",
+                        "Abrir Auditoría",
+                        "Cancelar"
+                };
+
+                int seleccion = JOptionPane.showOptionDialog(
+                        this,
+                        "¿Qué módulo deseas abrir?",
+                        "SIGELAB - Reportes y Auditoría",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opciones,
+                        opciones[0]
+                );
+
+                if (seleccion == 0) {
+                    new ReportesView().setVisible(true);
+
+                } else if (seleccion == 1) {
+                    new AuditoriaView().setVisible(true);
+                }
+            });
+        } else if (texto.equals("Cerrar Sesión")) {
+            boton.addActionListener(e -> {
+                int confirmar = JOptionPane.showConfirmDialog(
+                        this,
+                        "¿Desea cerrar la sesión actual?",
+                        "Cerrar Sesión",
+                        JOptionPane.YES_NO_OPTION
+                );
+                if (confirmar == JOptionPane.YES_OPTION) {
+                    // Registrar auditoría de logout
+                    com.sigelab.repository.AuditoriaService.registrar(
+                            usuarioLogueado.getIdUsuario(),
+                            "LOGOUT",
+                            "usuario",
+                            usuarioLogueado.getIdUsuario(),
+                            "El usuario cerró sesión."
+                    );
+                    dispose();
+                    new LoginView().setVisible(true);
+                }
+            });
+        }
+
+        return boton;
+    }
+
+    // Método modificado para recibir el JLabel con el número y poder actualizarlo dinámicamente
+    private JPanel crearMetrica(String titulo, JLabel valorLabel, String color) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false); // Para que tome el color del pnlStats
+
+        JLabel lblTituloMetrica = new JLabel(titulo);
+        lblTituloMetrica.setFont(new Font("Arial", Font.BOLD, 12));
+        lblTituloMetrica.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        valorLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        valorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        panel.add(Box.createVerticalGlue());
+        panel.add(lblTituloMetrica);
+        panel.add(valorLabel);
+        panel.add(Box.createVerticalGlue());
+
+        return panel;
+    }
+}
