@@ -58,6 +58,13 @@ public class DevolucionService {
             throw new IllegalArgumentException("Debe seleccionar el estado del equipo.");
         }
 
+        if (!"BUENO".equals(devolucion.getEstadoEquipo())
+                && !"DAÑADO".equals(devolucion.getEstadoEquipo())) {
+            throw new IllegalArgumentException(
+                    "La condición debe ser BUENO o DAÑADO."
+            );
+        }
+
         if (devolucion.getObservaciones() != null
                 && devolucion.getObservaciones().length() > 500) {
             throw new IllegalArgumentException(

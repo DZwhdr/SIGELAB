@@ -58,8 +58,7 @@ public class DevolucionView extends JFrame {
 
         cmbEstadoEquipo = new JComboBox<>(new String[]{
                 "BUENO",
-                "DAÑADO",
-                "EN REVISIÓN"
+                "DAÑADO"
         });
 
         txtObservaciones = new JTextArea(3, 20);

@@ -8,9 +8,16 @@ import java.sql.SQLException;
 public class ConexionBD {
 
     // Parámetros de conexión a la base de datos (puedes ajustar el nombre de tu base de datos, usuario y contraseña según tu entorno local)
-    private static final String URL = "jdbc:sqlserver://localhost:1433;databaseName=SIGELAB;encrypt=true;trustServerCertificate=true;";
-    private static final String USER = "sa"; // Usuario por defecto de SQL Server (cámbialo si usas otro)
-    private static final String PASSWORD = "Dev2025!"; // Tu contraseña de SQL Server
+    private static final String URL =
+            "jdbc:sqlserver://sigelabb2026.database.windows.net:1433;"
+                    + "databaseName=SIGELAB;"
+                    + "encrypt=true;"
+                    + "trustServerCertificate=false;";
+
+    private static final String USER = "sigelabadmin";
+
+    private static final String PASSWORD =
+            System.getenv().getOrDefault("SIGELAB_DB_PASSWORD", "");
 
     // Método estático para obtener una nueva conexión activa hacia la base de datos
     public static Connection obtenerConexion() {
@@ -25,3 +32,5 @@ public class ConexionBD {
             return null;
         }
     }
+}
+

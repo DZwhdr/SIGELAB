@@ -18,10 +18,10 @@ public class EquipoRepository {
 
     // Consulta que obtiene el equipo, su tipo y su laboratorio.
     private static final String CONSULTA_BASE = """
-            SELECT e.id, e.codigo_inventario, e.nombre,
+            SELECT e.id_equipo AS id, e.codigo_inventario, e.nombre,
                    e.marca, e.modelo, e.serie,
                    e.estado, e.observaciones,
-                   t.id AS tipo_id, t.nombre AS tipo_nombre,
+                   t.id_tipo AS tipo_id, t.nombre AS tipo_nombre,
                    l.id AS laboratorio_id,
                    l.codigo AS laboratorio_codigo,
                    l.nombre AS laboratorio_nombre,
@@ -30,9 +30,10 @@ public class EquipoRepository {
                    l.estado AS laboratorio_estado
             FROM dbo.Equipo e
             INNER JOIN dbo.TipoEquipo t
-                ON e.id_tipo_equipo = t.id
-            INNER JOIN dbo.Laboratorio l
+                ON e.id_tipo = t.id_tipo
+            LEFT JOIN dbo.Laboratorio l
                 ON e.id_laboratorio = l.id
+            WHERE e.activo = 1
             """;
 
     // Guardar un equipo nuevo.
@@ -40,7 +41,7 @@ public class EquipoRepository {
 
         String sql = """
                 INSERT INTO dbo.Equipo
-                    (codigo_inventario, nombre, id_tipo_equipo,
+                    (codigo_inventario, nombre, id_tipo,
                      marca, modelo, serie, id_laboratorio,
                      estado, observaciones)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -68,7 +69,7 @@ public class EquipoRepository {
     public List<Equipo> listar() throws SQLException {
 
         List<Equipo> equipos = new ArrayList<>();
-        String sql = CONSULTA_BASE + " ORDER BY e.id";
+        String sql = CONSULTA_BASE + " ORDER BY e.id_equipo";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
@@ -87,7 +88,7 @@ public class EquipoRepository {
     public Equipo buscarPorCodigo(String codigo) throws SQLException {
 
         String sql = CONSULTA_BASE
-                + " WHERE e.codigo_inventario = ?";
+                + " AND e.codigo_inventario = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia =
@@ -112,14 +113,14 @@ public class EquipoRepository {
                 UPDATE dbo.Equipo
                 SET codigo_inventario = ?,
                     nombre = ?,
-                    id_tipo_equipo = ?,
+                    id_tipo = ?,
                     marca = ?,
                     modelo = ?,
                     serie = ?,
                     id_laboratorio = ?,
                     estado = ?,
                     observaciones = ?
-                WHERE id = ?
+                WHERE id_equipo = ?
                 """;
 
         try (Connection conexion = ConexionBD.obtenerConexion();
@@ -181,9 +182,22 @@ public class EquipoRepository {
         equipo.setSerie(resultado.getString("serie"));
         equipo.setLaboratorio(laboratorio);
 
-        equipo.setEstado(
-                EstadoEquipo.valueOf(resultado.getString("estado"))
-        );
+        String estado = resultado.getString("estado");
+        estado = estado == null
+                ? "DISPONIBLE"
+                : estado.trim().toUpperCase()
+                .replace('Á', 'A')
+                .replace('É', 'E')
+                .replace('Í', 'I')
+                .replace('Ó', 'O')
+                .replace('Ú', 'U')
+                .replace('Ñ', 'N')
+                .replace(' ', '_');
+        if ("EN_MANTENIMIENTO".equals(estado)
+                || "EN_REPARACION".equals(estado)) {
+            estado = "MANTENIMIENTO";
+        }
+        equipo.setEstado(EstadoEquipo.valueOf(estado));
 
         equipo.setObservaciones(
                 resultado.getString("observaciones")
@@ -192,7 +206,7 @@ public class EquipoRepository {
         return equipo;
     }
     public boolean eliminar(int id) throws SQLException {
-        String sql = "DELETE FROM dbo.Equipo WHERE id = ?";
+        String sql = "UPDATE dbo.Equipo SET activo = 0 WHERE id_equipo = ?";
 
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
